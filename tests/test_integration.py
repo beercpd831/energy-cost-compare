@@ -103,8 +103,8 @@ async def test_ledger_from_hourly_statistics(
     assert totals.incomplete > 0
     assert totals.intervals - totals.incomplete == hours * 4
 
-    # Costs: 8 shipped contracts priced, and the sensors filled in.
-    assert len(coordinator.summary.costs) == 8
+    # Costs: 9 shipped contracts priced, and the sensors filled in.
+    assert len(coordinator.summary.costs) == 9
     # The price sensor includes VAT: 0.121 / 1.21 = 0.10 excl. VAT.
     vattenfall = hass.states.get("sensor.energy_cost_compare_vattenfall_1_jaar_vast_cost_of_actual_usage")
     assert vattenfall is not None

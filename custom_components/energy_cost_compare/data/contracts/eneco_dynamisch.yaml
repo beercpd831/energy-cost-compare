@@ -1,0 +1,33 @@
+# All amounts in euro EXCLUDING VAT. Dynamic: market price (EPEX) + markup.
+id: eneco_dynamisch
+name: Eneco dynamisch
+supplier: Eneco
+kind: dynamic
+checked_on: '2026-10-21'
+confidence: offer
+sources:
+- Eneco price breakdown for a dynamic contract (3x25A, Liander), copied by Peter on 21 Oct 2026
+note: 'Purchase fee 0.02297 per kWh incl. VAT until 31 Oct 2026 and 0.01890 from 1 Nov
+  2026; the same amount is deducted from every kWh fed in (sales fee). Fixed costs 8.99
+  per month incl. VAT. Gas purchase fee 0.10470 per m3 until 31 Oct and 0.10960 from
+  1 Nov (incl. VAT); gas fixed costs not shown, assumed equal to electricity. All divided
+  by 1.21. No separate feed-in costs.'
+periods:
+- valid_from: '2026-01-01'
+  electricity:
+    markup: 0.018983
+    feed_in_markup: -0.018983
+    feed_in_cost: 0.0
+    fixed_per_month: 7.4298
+  gas:
+    markup: 0.086529
+    fixed_per_month: 7.4298
+- valid_from: '2026-11-01'
+  electricity:
+    markup: 0.01562
+    feed_in_markup: -0.01562
+    feed_in_cost: 0.0
+    fixed_per_month: 7.4298
+  gas:
+    markup: 0.090579
+    fixed_per_month: 7.4298

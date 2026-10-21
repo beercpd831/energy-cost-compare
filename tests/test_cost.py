@@ -48,7 +48,7 @@ def _day(day: int, imp: float, exp: float, epex: float | None = None) -> list[In
 def test_shipped_tariff_files_load():
     tariffs = load_tariffs(DATA)
     assert tariffs.errors == []
-    assert len(tariffs.contracts) == 8
+    assert len(tariffs.contracts) == 9
     assert tariffs.taxes.at(date(2027, 1, 1))["netting"] is False
 
 
