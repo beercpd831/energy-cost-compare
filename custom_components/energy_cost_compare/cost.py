@@ -49,6 +49,22 @@ class _Year:
     reduction: float = 0.0
     netting: bool = True
     vat: float = 0.21
+    # Tiered feed-in costs per day: days they applied, the tiers, days in the year.
+    tier_days: int = 0
+    tiers: list[tuple[float, float]] = field(default_factory=list)
+    year_days: int = 365
+
+    def tier_cost(self) -> float:
+        """Per-day feed-in costs for the days so far, at the tier of the year's counted
+        feed-in, extrapolated to a full year from the days so far."""
+        if not self.tier_days or not self.tiers:
+            return 0.0
+        counted = min(self.exp, self.imp) * self.year_days / self.tier_days
+        per_day = 0.0
+        for from_kwh, cost in self.tiers:
+            if counted >= from_kwh:
+                per_day = cost
+        return per_day * self.tier_days
 
     def bill(self, kind: str) -> dict[str, float]:
         """Year-to-date bill per component, euro incl. VAT (VAT also shown on its own)."""
@@ -67,7 +83,7 @@ class _Year:
         parts = {
             "supply": supply,
             "feed_in": -feed,
-            "feed_in_cost": self.feed_cost,
+            "feed_in_cost": self.feed_cost + self.tier_cost(),
             "energy_tax": self.tax - netted * avg_tax,
             "fixed": self.fixed,
             "grid": self.grid,
@@ -148,6 +164,10 @@ def price_situation(
             per_day = 12 / _days_in_year(day)
             year.fixed += rates.fixed_per_month * per_day * scenario.supply_factor
             year.grid += float(grid.get("electricity_per_month", 0.0)) * per_day * scenario.grid_factor
+            year.year_days = _days_in_year(day)
+            if rates.feed_in_cost_tiers:
+                year.tier_days += 1
+                year.tiers = [(f, c * scenario.feed_in_factor) for f, c in rates.feed_in_cost_tiers]
             year.reduction += float(tax.get("tax_reduction_per_year", 0.0)) / _days_in_year(day)
         if rates is None:
             continue

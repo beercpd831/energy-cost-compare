@@ -103,7 +103,10 @@ async def _async_propose(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         "contract_id": contract_id,
         "valid_from": valid_from.isoformat(),
         "proposed_on": today.isoformat(),
-        "electricity": {k: float(v) for k, v in (call.data.get("electricity") or {}).items()},
+        "electricity": {
+            k: v if k == "feed_in_cost_tiers" else float(v)
+            for k, v in (call.data.get("electricity") or {}).items()
+        },
         "gas": {k: float(v) for k, v in (call.data.get("gas") or {}).items()},
         "sources": call.data.get("sources") or [],
         "note": call.data.get("note") or "",

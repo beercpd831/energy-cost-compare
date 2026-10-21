@@ -40,6 +40,19 @@ def _num(data: dict, key: str, where: str, default: float | None = None) -> floa
         raise TariffError(f"{where}: {key} must be a number") from err
 
 
+def _tiers(raw: Any, where: str) -> list[tuple[float, float]]:
+    if not raw:
+        return []
+    if not isinstance(raw, list):
+        raise TariffError(f"{where}: feed_in_cost_tiers must be a list")
+    tiers = []
+    for tier in raw:
+        if not isinstance(tier, dict):
+            raise TariffError(f"{where}: each feed-in cost tier needs from_kwh and per_day")
+        tiers.append((_num(tier, "from_kwh", where, 0.0), _num(tier, "per_day", where, 0.0)))
+    return sorted(tiers)
+
+
 @dataclass
 class Periods:
     """Values that change over time: a list of (valid_from, values) sorted by date."""
@@ -87,6 +100,10 @@ class ElectricityRates:
     # feed_in_bonus_min_price (Zonneplan: none below -2 cent incl. VAT)
     feed_in_bonus: float = 0.0
     feed_in_bonus_min_price: float = 0.0
+    # Feed-in costs per day, by the year's counted feed-in (Budget Energie until 2027):
+    # (from_kwh, per_day) sorted by from_kwh. Counted feed-in is the export up to the
+    # import, so a surplus over the year doesn't count.
+    feed_in_cost_tiers: list[tuple[float, float]] = field(default_factory=list)
 
 
 @dataclass
@@ -115,6 +132,7 @@ class Contract:
             fixed_per_month=_num(e, "fixed_per_month", where, 0.0),
             feed_in_bonus=_num(e, "feed_in_bonus", where, 0.0),
             feed_in_bonus_min_price=_num(e, "feed_in_bonus_min_price", where, 0.0),
+            feed_in_cost_tiers=_tiers(e.get("feed_in_cost_tiers"), where),
         )
 
     def gas(self, day: date) -> dict[str, float] | None:
@@ -289,7 +307,7 @@ def save_period(
 PROPOSAL_DIR = "proposals"
 ELECTRICITY_FIELDS = (
     "supply", "markup", "feed_in", "feed_in_markup", "feed_in_cost", "fixed_per_month", "feed_in_bonus",
-    "feed_in_bonus_min_price",
+    "feed_in_bonus_min_price", "feed_in_cost_tiers",
 )
 GAS_FIELDS = ("supply", "markup", "fixed_per_month")
 
@@ -308,6 +326,9 @@ def validate_proposal(contract: Contract, proposal: dict[str, Any]) -> None:
         for key, value in values.items():
             if key not in allowed:
                 raise TariffError(f"proposal: unknown {part} field '{key}'")
+            if key == "feed_in_cost_tiers":
+                _tiers(value, "proposal electricity")
+                continue
             if value is None or isinstance(value, bool):
                 raise TariffError(f"proposal {part}: {key} must be a number")
             _num(values, key, f"proposal {part}")
@@ -348,6 +369,8 @@ def current_values(contract: Contract, day: date) -> tuple[dict[str, Any], dict[
 def _same(a: Any, b: Any) -> bool:
     if a is None or b is None:
         return a is None and b is None
+    if isinstance(a, list) or isinstance(b, list):
+        return a == b
     return abs(float(a) - float(b)) < 1e-9
 
 

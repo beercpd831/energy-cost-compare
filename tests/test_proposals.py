@@ -135,3 +135,19 @@ async def test_propose_service_and_repair_flow(recorder_mock, enable_custom_inte
     contract = coordinator.tariffs.contracts[VATTENFALL]
     assert contract.electricity(date(2026, 11, 2)).supply == pytest.approx(0.19)
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+
+def test_tier_proposal(folder: Path):
+    budget = "budget_energie_vast_1jaar"
+    contract = load_tariffs(folder).contracts[budget]
+    tiers = [{"from_kwh": 0, "per_day": 0.0}, {"from_kwh": 5, "per_day": 0.0579}]
+    proposal = {"contract_id": budget, "valid_from": "2026-10-01",
+                "electricity": {"feed_in_cost": 0.0, "feed_in_cost_tiers": tiers}}
+    validate_proposal(contract, proposal)
+    with pytest.raises(TariffError):
+        validate_proposal(contract, {**proposal, "electricity": {"feed_in_cost_tiers": "lots"}})
+    assert ("feed_in_cost_tiers", None, tiers) in proposal_changes(contract, proposal)
+    accept_proposal(folder, contract, proposal, date(2026, 10, 21))
+    rates = load_tariffs(folder).contracts[budget].electricity(date(2026, 10, 15))
+    assert rates.feed_in_cost_tiers == [(0.0, 0.0), (5.0, 0.0579)]
+    assert rates.feed_in_cost == 0.0

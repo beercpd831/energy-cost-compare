@@ -196,3 +196,19 @@ def test_missing_price_estimated_from_neighbouring_days():
     # Same time of day on the days before and after: (0.20 + 0.30) / 2, plus 0.10 tax.
     assert days[1].total == pytest.approx(0.35)
     assert days[1].missing_prices == 1
+
+
+def test_feed_in_cost_tiers_per_day():
+    contract = _contract("fixed", supply=0.20, feed_in=0.0,
+                         feed_in_cost_tiers=[{"from_kwh": 0, "per_day": 0.0},
+                                             {"from_kwh": 1000, "per_day": 0.5},
+                                             {"from_kwh": 5000, "per_day": 2.0}])
+    # 10 kWh imported and exported per day: counted 10 x 365 = 3650 kWh a year -> 0.5/day.
+    intervals = [i for d in range(1, 5) for i in _day(d, 10, 10)]
+    days = price_situation(intervals, contract, _tariffs(), "C", UTC)
+    # Everything nets out, so what's left is the daily feed-in cost.
+    assert sum_days(days) == pytest.approx(4 * 0.5)
+    # A surplus over the import doesn't count: 2 kWh import, 20 export -> 730 kWh a year.
+    intervals = [i for d in range(1, 5) for i in _day(d, 2, 20)]
+    days = price_situation(intervals, contract, _tariffs(), "C", UTC)
+    assert days[-1].parts["feed_in_cost"] == pytest.approx(0.0)

@@ -51,6 +51,9 @@ On first start the integration copies its default tariff files to
 - `contracts/*.yaml`: one file per contract (`kind: fixed` or `dynamic`), with price
   periods (`valid_from`). All amounts are in euro **excluding VAT**; electricity supply
   prices exclude energy tax. Dynamic contracts are priced as market price + markup.
+  Feed-in costs can be per kWh (`feed_in_cost`) or per day by yearly feed-in
+  (`feed_in_cost_tiers`, a list of `from_kwh` / `per_day`), as Budget Energie charges until
+  2027. The tier follows the year's feed-in up to the import, extrapolated to a full year.
 - `scenarios/*.yaml`: rule and price changes replayed on your recorded data, for example
   `2027_no_netting` (no salderen, 2027 feed-in terms).
 

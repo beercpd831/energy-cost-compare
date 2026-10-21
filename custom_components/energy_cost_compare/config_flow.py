@@ -180,8 +180,13 @@ class EnergyCostCompareOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            electricity = {f: user_input[f] for f in e_fields if user_input.get(f) is not None}
-            gas = {f: user_input[f"gas_{f}"] for f in g_fields if user_input.get(f"gas_{f}") is not None}
+            # Start from the latest period, so values without a field here (such as
+            # feed-in cost tiers) are kept.
+            _, latest = contract.periods.items[-1]
+            electricity = dict(latest.get("electricity") or {})
+            electricity.update({f: user_input[f] for f in e_fields if user_input.get(f) is not None})
+            gas = dict(latest.get("gas") or {})
+            gas.update({f: user_input[f"gas_{f}"] for f in g_fields if user_input.get(f"gas_{f}") is not None})
             try:
                 await self.hass.async_add_executor_job(
                     save_period,
