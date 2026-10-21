@@ -6,6 +6,7 @@ once, over the whole bill, by the cost engine.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -51,6 +52,26 @@ def _tiers(raw: Any, where: str) -> list[tuple[float, float]]:
             raise TariffError(f"{where}: each feed-in cost tier needs from_kwh and per_day")
         tiers.append((_num(tier, "from_kwh", where, 0.0), _num(tier, "per_day", where, 0.0)))
     return sorted(tiers)
+
+
+def _hhmm(value: Any, where: str) -> str:
+    text = str(value)
+    if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", text):
+        raise TariffError(f"{where}: '{value}' is not a time (HH:MM)")
+    return text
+
+
+def _supply_slots(raw: Any, where: str) -> list[tuple[str, str, float]]:
+    if not raw:
+        return []
+    if not isinstance(raw, list):
+        raise TariffError(f"{where}: supply_slots must be a list")
+    slots = []
+    for slot in raw:
+        if not isinstance(slot, dict) or "supply" not in slot:
+            raise TariffError(f"{where}: each supply slot needs from, to and supply")
+        slots.append((_hhmm(slot.get("from"), where), _hhmm(slot.get("to"), where), _num(slot, "supply", where)))
+    return slots
 
 
 @dataclass
@@ -104,6 +125,9 @@ class ElectricityRates:
     # (from_kwh, per_day) sorted by from_kwh. Counted feed-in is the export up to the
     # import, so a surplus over the year doesn't count.
     feed_in_cost_tiers: list[tuple[float, float]] = field(default_factory=list)
+    # Fixed contracts with a time-of-use rate (Eneco's voordeeltarief): (from, to, supply)
+    # in local HH:MM; a slot may run past midnight. Outside the slots supply applies.
+    supply_slots: list[tuple[str, str, float]] = field(default_factory=list)
 
 
 @dataclass
@@ -133,6 +157,7 @@ class Contract:
             feed_in_bonus=_num(e, "feed_in_bonus", where, 0.0),
             feed_in_bonus_min_price=_num(e, "feed_in_bonus_min_price", where, 0.0),
             feed_in_cost_tiers=_tiers(e.get("feed_in_cost_tiers"), where),
+            supply_slots=_supply_slots(e.get("supply_slots"), where),
         )
 
     def gas(self, day: date) -> dict[str, float] | None:
@@ -307,8 +332,9 @@ def save_period(
 PROPOSAL_DIR = "proposals"
 ELECTRICITY_FIELDS = (
     "supply", "markup", "feed_in", "feed_in_markup", "feed_in_cost", "fixed_per_month", "feed_in_bonus",
-    "feed_in_bonus_min_price", "feed_in_cost_tiers",
+    "feed_in_bonus_min_price", "feed_in_cost_tiers", "supply_slots",
 )
+LIST_FIELDS = ("feed_in_cost_tiers", "supply_slots")
 GAS_FIELDS = ("supply", "markup", "fixed_per_month")
 
 
@@ -328,6 +354,9 @@ def validate_proposal(contract: Contract, proposal: dict[str, Any]) -> None:
                 raise TariffError(f"proposal: unknown {part} field '{key}'")
             if key == "feed_in_cost_tiers":
                 _tiers(value, "proposal electricity")
+                continue
+            if key == "supply_slots":
+                _supply_slots(value, "proposal electricity")
                 continue
             if value is None or isinstance(value, bool):
                 raise TariffError(f"proposal {part}: {key} must be a number")

@@ -388,6 +388,7 @@ FIELD_LABELS = {
     "feed_in_bonus": "daytime feed-in bonus (share of market price)",
     "feed_in_bonus_min_price": "no feed-in bonus below this market price (EUR/kWh)",
     "feed_in_cost_tiers": "feed-in costs per day by yearly feed-in (EUR/day)",
+    "supply_slots": "electricity supply at set times of day (EUR/kWh)",
     "gas_supply": "gas supply (EUR/m³)",
     "gas_markup": "gas markup (EUR/m³)",
     "gas_fixed_per_month": "fixed costs gas (EUR/month)",
@@ -400,8 +401,11 @@ def proposal_placeholders(contract, proposal: dict) -> dict[str, str]:
     for key, now, new in proposal_changes(contract, proposal):
         label = FIELD_LABELS.get(key, key)
         if isinstance(new, list) or isinstance(now, list):
-            tiers = ", ".join(f"from {t['from_kwh']:g} kWh {t['per_day']:.4g}/day" for t in new or [])
-            lines.append(f"- {label}: {tiers or 'none'}")
+            if key == "supply_slots":
+                text = ", ".join(f"{s['from']}-{s['to']} {s['supply']:.4g}" for s in new or [])
+            else:
+                text = ", ".join(f"from {t['from_kwh']:g} kWh {t['per_day']:.4g}/day" for t in new or [])
+            lines.append(f"- {label}: {text or 'none'}")
         elif now is None:
             lines.append(f"- {label}: new, {float(new):.5g}")
         else:

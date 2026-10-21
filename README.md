@@ -54,6 +54,9 @@ On first start the integration copies its default tariff files to
   Feed-in costs can be per kWh (`feed_in_cost`) or per day by yearly feed-in
   (`feed_in_cost_tiers`, a list of `from_kwh` / `per_day`), as Budget Energie charges until
   2027. The tier follows the year's feed-in up to the import, extrapolated to a full year.
+  A fixed contract with a time-of-use rate lists it in `supply_slots` (`from`, `to` as
+  quoted `"HH:MM"` local time, and `supply`); `supply` applies outside the slots. Netting
+  takes the standard-rate import first, then the slots.
 - `scenarios/*.yaml`: rule and price changes replayed on your recorded data, for example
   `2027_no_netting` (no salderen, 2027 feed-in terms).
 

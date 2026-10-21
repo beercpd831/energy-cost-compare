@@ -41,6 +41,9 @@ class _Year:
     imp: float = 0.0
     exp: float = 0.0
     supply: float = 0.0  # sum of supply price x import
+    # The part of the import at the standard supply price, outside time-of-use slots.
+    imp_std: float = 0.0
+    supply_std: float = 0.0
     feed: float = 0.0  # sum of feed-in rate x export
     feed_cost: float = 0.0
     tax: float = 0.0  # sum of energy tax x import
@@ -69,11 +72,16 @@ class _Year:
     def bill(self, kind: str) -> dict[str, float]:
         """Year-to-date bill per component, euro incl. VAT (VAT also shown on its own)."""
         netted = min(self.imp, self.exp) if self.netting else 0.0
-        avg_supply = self.supply / self.imp if self.imp else 0.0
         avg_tax = self.tax / self.imp if self.imp else 0.0
         if kind == FIXED:
             # Netted kWh cancel at the supply price; only the excess earns the feed-in rate.
-            supply = self.supply - netted * avg_supply
+            # Netting takes the standard-rate import first, then the time-of-use slots
+            # (Eneco: "eerst met je normaalverbruik en daarna met je dalverbruik").
+            netted_std = min(netted, self.imp_std)
+            imp_slots = self.imp - self.imp_std
+            avg_std = self.supply_std / self.imp_std if self.imp_std > 1e-9 else 0.0
+            avg_slots = (self.supply - self.supply_std) / imp_slots if imp_slots > 1e-9 else 0.0
+            supply = self.supply - netted_std * avg_std - (netted - netted_std) * avg_slots
             feed = (self.feed / self.exp) * (self.exp - netted) if self.exp else 0.0
         else:
             # Dynamic contracts settle every quarter at the market price; netting only
@@ -182,8 +190,15 @@ def price_situation(
             last_epex = epex
 
         market = (epex or 0.0) * scenario.market_factor
+        moment = datetime.fromtimestamp(interval.start, tz)
+        standard = True
         if contract.kind == FIXED:
-            supply_price = rates.supply * scenario.supply_factor
+            supply_price = rates.supply
+            for start, end, price in rates.supply_slots:
+                if _inside(moment.strftime("%H:%M"), start, end):
+                    supply_price, standard = price, False
+                    break
+            supply_price *= scenario.supply_factor
             feed_rate = (rates.feed_in if rates.feed_in is not None else 0.0) * scenario.feed_in_factor
         else:
             supply_price = market + rates.markup * scenario.supply_factor
@@ -191,11 +206,14 @@ def price_situation(
             if (rates.feed_in_bonus and market >= rates.feed_in_bonus_min_price
                     and daylight is not None and daylight(interval.start)):
                 feed_rate += market * rates.feed_in_bonus
-        grid_price = _slot_price(grid, datetime.fromtimestamp(interval.start, tz)) * scenario.grid_factor
+        grid_price = _slot_price(grid, moment) * scenario.grid_factor
 
         year.imp += imp
         year.exp += exp
         year.supply += supply_price * imp
+        if standard:
+            year.imp_std += imp
+            year.supply_std += supply_price * imp
         year.feed += feed_rate * exp
         year.feed_cost += rates.feed_in_cost * scenario.feed_in_factor * exp
         year.tax += float(tax.get("electricity_tax", 0.0)) * scenario.tax_factor * imp
@@ -240,11 +258,14 @@ def _slot_price(grid: dict, moment: datetime) -> float:
     slots = grid.get("slots") or []
     hhmm = moment.strftime("%H:%M")
     for slot in slots:
-        start, end = str(slot["from"]), str(slot["to"])
-        inside = start <= hhmm < end if start < end else (hhmm >= start or hhmm < end)
-        if inside:
+        if _inside(hhmm, str(slot["from"]), str(slot["to"])):
             return float(slot.get("per_kwh", 0.0))
     return 0.0
+
+
+def _inside(hhmm: str, start: str, end: str) -> bool:
+    """Whether a local HH:MM falls in [start, end); a slot may run past midnight."""
+    return start <= hhmm < end if start < end else (hhmm >= start or hhmm < end)
 
 
 def sum_days(days: list[DayCost], start: date | None = None, end: date | None = None) -> float:

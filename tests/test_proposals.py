@@ -151,3 +151,17 @@ def test_tier_proposal(folder: Path):
     rates = load_tariffs(folder).contracts[budget].electricity(date(2026, 10, 15))
     assert rates.feed_in_cost_tiers == [(0.0, 0.0), (5.0, 0.0579)]
     assert rates.feed_in_cost == 0.0
+
+
+def test_supply_slots_proposal(folder: Path):
+    eneco = "eneco_vast_1jaar"
+    contract = load_tariffs(folder).contracts[eneco]
+    slots = [{"from": "10:00", "to": "17:00", "supply": 0.15}, {"from": "22:00", "to": "05:00", "supply": 0.15}]
+    proposal = {"contract_id": eneco, "valid_from": "2026-10-01",
+                "electricity": {"supply": 0.22, "supply_slots": slots}}
+    validate_proposal(contract, proposal)
+    with pytest.raises(TariffError):
+        validate_proposal(contract, {**proposal, "electricity": {"supply_slots": [{"from": "10:00"}]}})
+    accept_proposal(folder, contract, proposal, date(2026, 10, 21))
+    rates = load_tariffs(folder).contracts[eneco].electricity(date(2026, 10, 15))
+    assert rates.supply_slots == [("10:00", "17:00", 0.15), ("22:00", "05:00", 0.15)]

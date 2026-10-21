@@ -11,6 +11,7 @@ from custom_components.energy_cost_compare.tariffs import (
     Contract,
     GridTariff,
     Periods,
+    TariffError,
     TariffSet,
     Taxes,
     load_tariffs,
@@ -212,3 +213,28 @@ def test_feed_in_cost_tiers_per_day():
     intervals = [i for d in range(1, 5) for i in _day(d, 2, 20)]
     days = price_situation(intervals, contract, _tariffs(), "C", UTC)
     assert days[-1].parts["feed_in_cost"] == pytest.approx(0.0)
+
+
+def test_time_of_use_supply_slots():
+    contract = _contract("fixed", supply=0.30, feed_in=0.0,
+                         supply_slots=[{"from": "10:00", "to": "17:00", "supply": 0.10},
+                                       {"from": "22:00", "to": "05:00", "supply": 0.10}])
+
+    def at(hour: int, imp: float, exp: float) -> Interval:
+        start = int(datetime(2026, 10, 1, hour, tzinfo=UTC).timestamp())
+        return Interval(start=start, values={"grid_import": imp, "grid_export": exp, "pv": 0.0})
+
+    # 10 kWh in the night slot, 10 kWh at the standard rate in the evening.
+    intervals = [at(3, 10, 0), at(12, 0, 0), at(19, 10, 0)]
+    days = price_situation(intervals, contract, _tariffs(netting=False), "C", UTC)
+    assert days[-1].parts["supply"] == pytest.approx(10 * 0.10 + 10 * 0.30)
+    # 5 kWh fed in nets against the standard-rate import first.
+    intervals = [at(3, 10, 0), at(12, 0, 5), at(19, 10, 0)]
+    days = price_situation(intervals, contract, _tariffs(), "C", UTC)
+    assert days[-1].parts["supply"] == pytest.approx(10 * 0.10 + 5 * 0.30)
+    # Feeding in more than the standard-rate import nets the rest at the slot rate.
+    intervals = [at(3, 10, 0), at(12, 0, 15), at(19, 10, 0)]
+    days = price_situation(intervals, contract, _tariffs(), "C", UTC)
+    assert days[-1].parts["supply"] == pytest.approx(5 * 0.10)
+    with pytest.raises(TariffError):
+        _contract("fixed", supply=0.30, supply_slots=[{"from": "25:00", "to": "05:00", "supply": 0.1}])

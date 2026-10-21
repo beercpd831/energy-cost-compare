@@ -24,7 +24,7 @@ from .const import (
 )
 from .coordinator import LedgerCoordinator
 from .ledger import Ledger
-from .tariffs import TariffError, proposal_changes, save_proposal, validate_proposal
+from .tariffs import LIST_FIELDS, TariffError, proposal_changes, save_proposal, validate_proposal
 
 PLATFORMS = [Platform.SELECT, Platform.SENSOR]
 
@@ -104,7 +104,7 @@ async def _async_propose(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         "valid_from": valid_from.isoformat(),
         "proposed_on": today.isoformat(),
         "electricity": {
-            k: v if k == "feed_in_cost_tiers" else float(v)
+            k: v if k in LIST_FIELDS else float(v)
             for k, v in (call.data.get("electricity") or {}).items()
         },
         "gas": {k: float(v) for k, v in (call.data.get("gas") or {}).items()},
