@@ -1,0 +1,43 @@
+recalculate:
+  fields:
+    from_date:
+      required: false
+      selector:
+        date:
+reload_tariffs:
+propose_prices:
+  fields:
+    contract_id:
+      required: true
+      example: vattenfall_vast_1jaar
+      selector:
+        text:
+    valid_from:
+      required: false
+      selector:
+        date:
+    electricity:
+      required: false
+      example: '{"supply": 0.1846, "feed_in": 0.0772, "feed_in_cost": 0.0909, "fixed_per_month": 6.19}'
+      selector:
+        object:
+    gas:
+      required: false
+      example: '{"supply": 0.9544, "fixed_per_month": 6.6}'
+      selector:
+        object:
+    sources:
+      required: false
+      selector:
+        text:
+          multiple: true
+    note:
+      required: false
+      selector:
+        text:
+          multiline: true
+    confidence:
+      required: false
+      example: offer
+      selector:
+        text:

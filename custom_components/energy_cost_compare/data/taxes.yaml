@@ -1,0 +1,16 @@
+# Government charges, all amounts in euro EXCLUDING VAT.
+# Sources: Belastingdienst (2026 rates), Rijksoverheid (heffingskorting 2026-2028).
+# 2027: energy tax assumed unchanged from 2026 until the Belastingdienst publishes it.
+periods:
+  - valid_from: 2026-01-01
+    vat: 0.21
+    electricity_tax: 0.09161     # EUR/kWh, first bracket (up to 10,000 kWh)
+    gas_tax: 0.60066             # EUR/m3, first bracket (up to 1,000 m3)
+    tax_reduction_per_year: 519.80
+    netting: true                # salderen
+  - valid_from: 2027-01-01
+    vat: 0.21
+    electricity_tax: 0.09161     # assumption: unchanged
+    gas_tax: 0.60066             # assumption: unchanged
+    tax_reduction_per_year: 519.58
+    netting: false               # salderen ends on 1 January 2027

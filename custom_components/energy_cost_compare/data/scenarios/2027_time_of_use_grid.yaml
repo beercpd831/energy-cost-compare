@@ -1,0 +1,10 @@
+id: 2027_time_of_use_grid
+name: 2027 met tijdsafhankelijk nettarief (voorbeeld)
+tariff_date: 2027-01-01
+netting: false
+grid_slots:                 # example only: no such tariff has been announced yet
+  - {from: "07:00", to: "09:00", per_kwh: 0.04}
+  - {from: "17:00", to: "21:00", per_kwh: 0.06}
+note: >-
+  Illustrates how sensitive the bill is to a time-dependent grid tariff. The slots and
+  amounts are made up; replace them when a real tariff is published.

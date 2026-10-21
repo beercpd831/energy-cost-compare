@@ -1,0 +1,10 @@
+id: 2027_prices_up
+name: 2027 zonder salderen, prijzen +10%
+tariff_date: 2027-01-01
+netting: false
+supply_factor: 1.10
+market_factor: 1.10
+tax_factor: 1.0
+grid_factor: 1.05
+feed_in_factor: 1.0
+note: Example of a price change on top of the 2027 rules. Adjust the factors to taste.

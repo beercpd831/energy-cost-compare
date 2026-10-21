@@ -1,0 +1,33 @@
+# All amounts in euro EXCLUDING VAT; electricity supply excludes energy tax.
+id: vattenfall_vast_1jaar
+name: Vattenfall 1 jaar vast
+supplier: Vattenfall
+kind: fixed
+checked_on: '2026-10-21'
+confidence: estimate
+sources:
+- https://www.keuze.nl/blog/dit-gebeurde-er-in-maart-op-de-energiemarkt-lagere-tarieven
+- https://zonnesaldo.nl/terugleverkosten-2027
+- https://mijnenergierapport.nl/terugleverkosten-vergelijken-2026/
+note: 'Estimate from comparison sites (21 Oct 2026, average house in Utrecht). Supply
+  price derived from the all-in price minus energy tax and VAT. Fixed costs, feed-in
+  rate and feed-in costs are estimates: check them in a personal offer from the supplier.'
+periods:
+- valid_from: '2026-10-01'
+  electricity:
+    supply: 0.1846
+    feed_in: 0.0772
+    feed_in_cost: 0.0909
+    fixed_per_month: 6.19
+  gas:
+    supply: 0.9544
+    fixed_per_month: 6.6
+- valid_from: '2027-01-01'
+  electricity:
+    supply: 0.1846
+    feed_in: 0.0772
+    feed_in_cost: 0.0443
+    fixed_per_month: 6.19
+  gas:
+    supply: 0.9544
+    fixed_per_month: 6.6

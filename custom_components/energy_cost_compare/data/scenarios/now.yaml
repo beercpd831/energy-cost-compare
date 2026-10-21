@@ -1,0 +1,5 @@
+# Scenarios replay your recorded energy data under other rules or prices.
+# This one changes nothing: today's contracts and rules.
+id: now
+name: Nu (huidige regels)
+note: Contracts, taxes and salderen as they apply on each day.

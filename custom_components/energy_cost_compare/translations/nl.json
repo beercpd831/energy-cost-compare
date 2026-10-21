@@ -1,0 +1,386 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energiekosten vergelijken",
+        "description": "Kies de energietellers die worden vastgelegd. Meerdere tellers per veld worden opgeteld.",
+        "data": {
+          "grid_import": "Netafname",
+          "grid_export": "Teruglevering",
+          "pv": "PV-opbrengst",
+          "inv_in": "Naar de batterij-omvormers",
+          "inv_out": "Uit de batterij-omvormers",
+          "dc_charge": "Batterij DC laden",
+          "dc_discharge": "Batterij DC ontladen",
+          "heat": "Warmte van de warmtepomp",
+          "hp_elec": "Stroom van de warmtepomp",
+          "boiler_efficiency": "Rendement cv-ketel",
+          "price_sensor": "Marktprijssensor",
+          "price_includes_vat": "Prijssensor is inclusief btw",
+          "start_date": "Startdatum"
+        },
+        "data_description": {
+          "grid_import": "Energie van het net (kWh-tellers)",
+          "grid_export": "Energie terug naar het net",
+          "pv": "Opbrengst van de zonne-omvormer",
+          "inv_in": "AC-energie de omvormers in, vanaf AC-in en AC-out",
+          "inv_out": "AC-energie de omvormers uit, naar AC-out en AC-in",
+          "dc_charge": "Optioneel, om verliezen te scheiden van opgeslagen energie",
+          "dc_discharge": "Optioneel, samen met DC laden",
+          "heat": "Geleverde warmte voor verwarming en warm water (kWh-tellers), voor de gasvergelijking",
+          "hp_elec": "Elektriciteitsverbruik van de warmtepomp",
+          "boiler_efficiency": "Rendement van de gasketel waarmee je vergelijkt (0,90 = 90%, op bovenwaarde)",
+          "price_sensor": "Day-ahead (EPEX) prijs in EUR/kWh, bijvoorbeeld van ENTSO-e",
+          "price_includes_vat": "Aan als de sensor de marktprijs plus 21% btw toont",
+          "start_date": "Vergelijken vanaf deze datum"
+        }
+      }
+    },
+    "error": {
+      "required": "Dit veld is verplicht",
+      "inverter_pair": "Vul beide omvormervelden in, of geen van beide",
+      "invalid_prices": "Deze prijzen kunnen niet worden opgeslagen; controleer de waarden"
+    },
+    "abort": {
+      "already_configured": "Energiekosten vergelijken is al ingesteld"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Energiekosten vergelijken",
+        "menu_options": {
+          "counters": "Energietellers en prijssensor",
+          "contract": "Contractprijzen controleren en bijwerken"
+        }
+      },
+      "counters": {
+        "title": "Energietellers",
+        "description": "Wijzigen bouwt de geschiedenis opnieuw op vanaf de startdatum.",
+        "data": {
+          "grid_import": "Netafname",
+          "grid_export": "Teruglevering",
+          "pv": "PV-opbrengst",
+          "inv_in": "Naar de batterij-omvormers",
+          "inv_out": "Uit de batterij-omvormers",
+          "dc_charge": "Batterij DC laden",
+          "dc_discharge": "Batterij DC ontladen",
+          "heat": "Warmte van de warmtepomp",
+          "hp_elec": "Stroom van de warmtepomp",
+          "boiler_efficiency": "Rendement cv-ketel",
+          "price_sensor": "Marktprijssensor",
+          "price_includes_vat": "Prijssensor is inclusief btw",
+          "start_date": "Startdatum"
+        },
+        "data_description": {
+          "grid_import": "Energie van het net (kWh-tellers)",
+          "grid_export": "Energie terug naar het net",
+          "pv": "Opbrengst van de zonne-omvormer",
+          "inv_in": "AC-energie de omvormers in, vanaf AC-in en AC-out",
+          "inv_out": "AC-energie de omvormers uit, naar AC-out en AC-in",
+          "dc_charge": "Optioneel, om verliezen te scheiden van opgeslagen energie",
+          "dc_discharge": "Optioneel, samen met DC laden",
+          "heat": "Geleverde warmte voor verwarming en warm water (kWh-tellers), voor de gasvergelijking",
+          "hp_elec": "Elektriciteitsverbruik van de warmtepomp",
+          "boiler_efficiency": "Rendement van de gasketel waarmee je vergelijkt (0,90 = 90%, op bovenwaarde)",
+          "price_sensor": "Day-ahead (EPEX) prijs in EUR/kWh, bijvoorbeeld van ENTSO-e",
+          "price_includes_vat": "Aan als de sensor de marktprijs plus 21% btw toont",
+          "start_date": "Vergelijken vanaf deze datum"
+        }
+      },
+      "contract": {
+        "title": "Welk contract?",
+        "data": {
+          "contract": "Contract"
+        }
+      },
+      "prices": {
+        "title": "Prijzen van {name}",
+        "description": "Alle bedragen in euro exclusief btw; de stroomprijs is exclusief energiebelasting. De huidige waarden gelden vanaf {latest_from}. Een nieuwe ingangsdatum voegt een prijsperiode toe en bewaart de oude.\n\nOpmerking: {note}\n\nBronnen: {sources}",
+        "data": {
+          "supply": "Leveringsprijs stroom (EUR/kWh)",
+          "markup": "Opslag stroom op marktprijs (EUR/kWh)",
+          "feed_in": "Terugleververgoeding (EUR/kWh)",
+          "feed_in_markup": "Opslag teruglevering op marktprijs (EUR/kWh, mag negatief)",
+          "feed_in_bonus": "Zonnebonus overdag (deel van een positieve marktprijs, 0,10 = 10%)",
+          "feed_in_cost": "Terugleverkosten (EUR per teruggeleverde kWh)",
+          "fixed_per_month": "Vaste leveringskosten stroom (EUR/maand)",
+          "gas_supply": "Leveringsprijs gas (EUR/m³)",
+          "gas_markup": "Opslag gas (EUR/m³)",
+          "gas_fixed_per_month": "Vaste leveringskosten gas (EUR/maand)",
+          "valid_from": "Prijzen geldig vanaf",
+          "checked_on": "Gecontroleerd op"
+        }
+      }
+    },
+    "error": {
+      "required": "Dit veld is verplicht",
+      "inverter_pair": "Vul beide omvormervelden in, of geen van beide",
+      "invalid_prices": "Deze prijzen kunnen niet worden opgeslagen; controleer de waarden"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "house_load_today": {
+        "name": "Huisverbruik vandaag"
+      },
+      "house_load_total": {
+        "name": "Huisverbruik sinds start"
+      },
+      "pv_only_import_today": {
+        "name": "Alleen PV: netafname vandaag"
+      },
+      "pv_only_import_total": {
+        "name": "Alleen PV: netafname sinds start"
+      },
+      "pv_only_export_today": {
+        "name": "Alleen PV: teruglevering vandaag"
+      },
+      "pv_only_export_total": {
+        "name": "Alleen PV: teruglevering sinds start"
+      },
+      "battery_net_ac_today": {
+        "name": "Batterijsysteem netto AC vandaag"
+      },
+      "battery_net_ac_total": {
+        "name": "Batterijsysteem netto AC sinds start"
+      },
+      "battery_losses_today": {
+        "name": "Batterijverliezen vandaag"
+      },
+      "battery_losses_total": {
+        "name": "Batterijverliezen sinds start"
+      },
+      "last_interval": {
+        "name": "Laatst vastgelegd kwartier"
+      },
+      "incomplete_intervals": {
+        "name": "Onvolledige kwartieren"
+      },
+      "missing_prices": {
+        "name": "Kwartieren zonder marktprijs"
+      },
+      "cost_baseline_today": {
+        "name": "Kosten zonder PV en batterij (basis) vandaag"
+      },
+      "cost_baseline_month": {
+        "name": "Kosten zonder PV en batterij (basis) deze maand"
+      },
+      "cost_baseline_year": {
+        "name": "Kosten zonder PV en batterij (basis) dit jaar"
+      },
+      "cost_baseline_total": {
+        "name": "Kosten zonder PV en batterij (basis) sinds start"
+      },
+      "cost_pv_today": {
+        "name": "Kosten met alleen PV vandaag"
+      },
+      "cost_pv_month": {
+        "name": "Kosten met alleen PV deze maand"
+      },
+      "cost_pv_year": {
+        "name": "Kosten met alleen PV dit jaar"
+      },
+      "cost_pv_total": {
+        "name": "Kosten met alleen PV sinds start"
+      },
+      "cost_pv_battery_today": {
+        "name": "Kosten met PV en batterij vandaag"
+      },
+      "cost_pv_battery_month": {
+        "name": "Kosten met PV en batterij deze maand"
+      },
+      "cost_pv_battery_year": {
+        "name": "Kosten met PV en batterij dit jaar"
+      },
+      "cost_pv_battery_total": {
+        "name": "Kosten met PV en batterij sinds start"
+      },
+      "saving_pv_today": {
+        "name": "Besparing PV vandaag"
+      },
+      "saving_pv_month": {
+        "name": "Besparing PV deze maand"
+      },
+      "saving_pv_year": {
+        "name": "Besparing PV dit jaar"
+      },
+      "saving_pv_total": {
+        "name": "Besparing PV sinds start"
+      },
+      "saving_pv_battery_today": {
+        "name": "Besparing PV en batterij vandaag"
+      },
+      "saving_pv_battery_month": {
+        "name": "Besparing PV en batterij deze maand"
+      },
+      "saving_pv_battery_year": {
+        "name": "Besparing PV en batterij dit jaar"
+      },
+      "saving_pv_battery_total": {
+        "name": "Besparing PV en batterij sinds start"
+      },
+      "saving_battery_today": {
+        "name": "Besparing batterij vandaag"
+      },
+      "saving_battery_month": {
+        "name": "Besparing batterij deze maand"
+      },
+      "saving_battery_year": {
+        "name": "Besparing batterij dit jaar"
+      },
+      "saving_battery_total": {
+        "name": "Besparing batterij sinds start"
+      },
+      "contract": {
+        "name": "{name}: kosten van werkelijk verbruik"
+      },
+      "gas_boiler_cost_today": {
+        "name": "Verwarmingskosten met cv-ketel vandaag"
+      },
+      "gas_boiler_cost_month": {
+        "name": "Verwarmingskosten met cv-ketel deze maand"
+      },
+      "gas_boiler_cost_year": {
+        "name": "Verwarmingskosten met cv-ketel dit jaar"
+      },
+      "gas_boiler_cost_total": {
+        "name": "Verwarmingskosten met cv-ketel sinds start"
+      },
+      "heat_pump_cost_today": {
+        "name": "Verwarmingskosten met warmtepomp vandaag"
+      },
+      "heat_pump_cost_month": {
+        "name": "Verwarmingskosten met warmtepomp deze maand"
+      },
+      "heat_pump_cost_year": {
+        "name": "Verwarmingskosten met warmtepomp dit jaar"
+      },
+      "heat_pump_cost_total": {
+        "name": "Verwarmingskosten met warmtepomp sinds start"
+      },
+      "saving_heat_pump_today": {
+        "name": "Besparing warmtepomp vandaag"
+      },
+      "saving_heat_pump_month": {
+        "name": "Besparing warmtepomp deze maand"
+      },
+      "saving_heat_pump_year": {
+        "name": "Besparing warmtepomp dit jaar"
+      },
+      "saving_heat_pump_total": {
+        "name": "Besparing warmtepomp sinds start"
+      },
+      "scenario_cost_baseline": {
+        "name": "Scenario: kosten zonder PV en batterij (basis)"
+      },
+      "scenario_cost_pv": {
+        "name": "Scenario: kosten met alleen PV"
+      },
+      "scenario_cost_pv_battery": {
+        "name": "Scenario: kosten met PV en batterij"
+      },
+      "scenario_saving_pv": {
+        "name": "Scenario: besparing PV"
+      },
+      "scenario_saving_pv_battery": {
+        "name": "Scenario: besparing PV en batterij"
+      },
+      "scenario_saving_battery": {
+        "name": "Scenario: besparing batterij"
+      }
+    },
+    "select": {
+      "baseline": {
+        "name": "Basiscontract"
+      },
+      "actual": {
+        "name": "Huidige leverancier"
+      },
+      "scenario": {
+        "name": "Toekomstscenario"
+      }
+    }
+  },
+  "issues": {
+    "tariff_errors": {
+      "title": "Fouten in tariefbestanden",
+      "description": "Deze tariefbestanden konden niet worden gebruikt: {errors}. Ze staan in {folder}."
+    },
+    "stale_prices": {
+      "title": "Contractprijzen controleren",
+      "description": "De prijzen van {contracts} zijn meer dan {days} dagen geleden gecontroleerd. Controleer ze via Instellingen > Apparaten en diensten > Energiekosten vergelijken > Configureren."
+    },
+    "price_proposal": {
+      "title": "Nieuwe prijzen voor {contract}",
+      "description": "Voorgesteld op {proposed_on}, geldig vanaf {valid_from}. Alle bedragen excl. btw.\n\n{changes}\n\nBronnen:\n{sources}\n\nOpmerking: {note}",
+      "fix_flow": {
+        "step": {
+          "init": {
+            "title": "Nieuwe prijzen voor {contract}",
+            "description": "Geldig vanaf {valid_from}. Alle bedragen excl. btw.\n\n{changes}\n\nBronnen:\n{sources}\n\nAccepteren voegt een prijsperiode toe vanaf {valid_from}; eerdere dagen houden hun oude prijzen. Een latere periode krijgt alleen een nieuwe waarde waar die gelijk was aan nu.",
+            "menu_options": {
+              "accept": "Prijzen accepteren",
+              "reject": "Afwijzen"
+            }
+          }
+        },
+        "abort": {
+          "proposal_gone": "Dit voorstel bestaat niet meer.",
+          "proposal_invalid": "Deze prijzen kunnen niet worden opgeslagen; controleer het contractbestand."
+        }
+      }
+    }
+  },
+  "services": {
+    "recalculate": {
+      "name": "Herberekenen",
+      "description": "Lees de energiegeschiedenis opnieuw vanaf een datum (standaard de startdatum).",
+      "fields": {
+        "from_date": {
+          "name": "Vanaf datum",
+          "description": "Eerste dag om te herberekenen"
+        }
+      }
+    },
+    "reload_tariffs": {
+      "name": "Tarieven herladen",
+      "description": "Lees de contract-, belasting- en netbeheerbestanden opnieuw na een wijziging.",
+      "fields": {}
+    },
+    "propose_prices": {
+      "name": "Contractprijzen voorstellen",
+      "description": "Stel nieuwe prijzen voor een contract voor. Ze worden pas gebruikt als je de reparatiemelding accepteert.",
+      "fields": {
+        "contract_id": {
+          "name": "Contract",
+          "description": "Id van het contract, bijvoorbeeld vattenfall_vast_1jaar"
+        },
+        "valid_from": {
+          "name": "Geldig vanaf",
+          "description": "Eerste dag van de nieuwe prijzen (standaard vandaag)"
+        },
+        "electricity": {
+          "name": "Stroomprijzen",
+          "description": "EUR excl. btw: supply, markup, feed_in, feed_in_markup, feed_in_cost, fixed_per_month; feed_in_bonus als deel"
+        },
+        "gas": {
+          "name": "Gasprijzen",
+          "description": "EUR excl. btw: supply, markup, fixed_per_month"
+        },
+        "sources": {
+          "name": "Bronnen",
+          "description": "Waar de prijzen gevonden zijn"
+        },
+        "note": {
+          "name": "Opmerking",
+          "description": "Getoond bij het voorstel en bewaard bij het contract"
+        },
+        "confidence": {
+          "name": "Betrouwbaarheid",
+          "description": "Bijvoorbeeld estimate of offer"
+        }
+      }
+    }
+  }
+}

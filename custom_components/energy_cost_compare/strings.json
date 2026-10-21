@@ -1,0 +1,386 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy cost compare",
+        "description": "Pick the energy counters to record. Several counters per field are added up.",
+        "data": {
+          "grid_import": "Grid import",
+          "grid_export": "Grid export",
+          "pv": "PV production",
+          "inv_in": "Into battery inverters",
+          "inv_out": "Out of battery inverters",
+          "dc_charge": "Battery DC charge",
+          "dc_discharge": "Battery DC discharge",
+          "heat": "Heat from the heat pump",
+          "hp_elec": "Heat pump electricity",
+          "boiler_efficiency": "Gas boiler efficiency",
+          "price_sensor": "Market price sensor",
+          "price_includes_vat": "Price sensor includes VAT",
+          "start_date": "Start date"
+        },
+        "data_description": {
+          "grid_import": "Energy taken from the grid (kWh counters)",
+          "grid_export": "Energy fed into the grid",
+          "pv": "Solar inverter yield",
+          "inv_in": "AC energy into the battery inverters, from both AC-in and AC-out",
+          "inv_out": "AC energy out of the battery inverters, to both AC-out and AC-in",
+          "dc_charge": "Optional, used to split battery losses from stored energy",
+          "dc_discharge": "Optional, used with DC charge",
+          "heat": "Heat delivered for heating and hot water (kWh counters), for the gas comparison",
+          "hp_elec": "Electricity used by the heat pump",
+          "boiler_efficiency": "Efficiency of the gas boiler you compare with (0.90 = 90%, on upper heating value)",
+          "price_sensor": "Day-ahead (EPEX) price in EUR/kWh, for example from ENTSO-e",
+          "price_includes_vat": "On when the sensor shows the market price plus 21% VAT",
+          "start_date": "Compare from this date"
+        }
+      }
+    },
+    "error": {
+      "required": "This field is required",
+      "inverter_pair": "Fill in both inverter fields, or neither",
+      "invalid_prices": "These prices can't be saved; check the values"
+    },
+    "abort": {
+      "already_configured": "Energy cost compare is already set up"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Energy cost compare",
+        "menu_options": {
+          "counters": "Energy counters and price sensor",
+          "contract": "Check and update contract prices"
+        }
+      },
+      "counters": {
+        "title": "Energy counters",
+        "description": "Changing these rebuilds the history from the start date.",
+        "data": {
+          "grid_import": "Grid import",
+          "grid_export": "Grid export",
+          "pv": "PV production",
+          "inv_in": "Into battery inverters",
+          "inv_out": "Out of battery inverters",
+          "dc_charge": "Battery DC charge",
+          "dc_discharge": "Battery DC discharge",
+          "heat": "Heat from the heat pump",
+          "hp_elec": "Heat pump electricity",
+          "boiler_efficiency": "Gas boiler efficiency",
+          "price_sensor": "Market price sensor",
+          "price_includes_vat": "Price sensor includes VAT",
+          "start_date": "Start date"
+        },
+        "data_description": {
+          "grid_import": "Energy taken from the grid (kWh counters)",
+          "grid_export": "Energy fed into the grid",
+          "pv": "Solar inverter yield",
+          "inv_in": "AC energy into the battery inverters, from both AC-in and AC-out",
+          "inv_out": "AC energy out of the battery inverters, to both AC-out and AC-in",
+          "dc_charge": "Optional, used to split battery losses from stored energy",
+          "dc_discharge": "Optional, used with DC charge",
+          "heat": "Heat delivered for heating and hot water (kWh counters), for the gas comparison",
+          "hp_elec": "Electricity used by the heat pump",
+          "boiler_efficiency": "Efficiency of the gas boiler you compare with (0.90 = 90%, on upper heating value)",
+          "price_sensor": "Day-ahead (EPEX) price in EUR/kWh, for example from ENTSO-e",
+          "price_includes_vat": "On when the sensor shows the market price plus 21% VAT",
+          "start_date": "Compare from this date"
+        }
+      },
+      "contract": {
+        "title": "Which contract?",
+        "data": {
+          "contract": "Contract"
+        }
+      },
+      "prices": {
+        "title": "Prices of {name}",
+        "description": "All amounts in euro excluding VAT; electricity supply excludes energy tax. Current values are from {latest_from}. A new start date adds a price period and keeps the old one.\n\nNote: {note}\n\nSources: {sources}",
+        "data": {
+          "supply": "Electricity supply price (EUR/kWh)",
+          "markup": "Electricity markup on market price (EUR/kWh)",
+          "feed_in": "Feed-in compensation (EUR/kWh)",
+          "feed_in_markup": "Feed-in markup on market price (EUR/kWh, may be negative)",
+          "feed_in_bonus": "Daytime feed-in bonus (share of a positive market price, 0.10 = 10%)",
+          "feed_in_cost": "Feed-in costs (EUR per exported kWh)",
+          "fixed_per_month": "Fixed supply costs electricity (EUR/month)",
+          "gas_supply": "Gas supply price (EUR/m³)",
+          "gas_markup": "Gas markup (EUR/m³)",
+          "gas_fixed_per_month": "Fixed supply costs gas (EUR/month)",
+          "valid_from": "Prices valid from",
+          "checked_on": "Checked on"
+        }
+      }
+    },
+    "error": {
+      "required": "This field is required",
+      "inverter_pair": "Fill in both inverter fields, or neither",
+      "invalid_prices": "These prices can't be saved; check the values"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "house_load_today": {
+        "name": "House load today"
+      },
+      "house_load_total": {
+        "name": "House load since start"
+      },
+      "pv_only_import_today": {
+        "name": "PV only: grid import today"
+      },
+      "pv_only_import_total": {
+        "name": "PV only: grid import since start"
+      },
+      "pv_only_export_today": {
+        "name": "PV only: grid export today"
+      },
+      "pv_only_export_total": {
+        "name": "PV only: grid export since start"
+      },
+      "battery_net_ac_today": {
+        "name": "Battery system net AC today"
+      },
+      "battery_net_ac_total": {
+        "name": "Battery system net AC since start"
+      },
+      "battery_losses_today": {
+        "name": "Battery losses today"
+      },
+      "battery_losses_total": {
+        "name": "Battery losses since start"
+      },
+      "last_interval": {
+        "name": "Last recorded interval"
+      },
+      "incomplete_intervals": {
+        "name": "Incomplete intervals"
+      },
+      "missing_prices": {
+        "name": "Intervals without market price"
+      },
+      "cost_baseline_today": {
+        "name": "Cost without PV and battery (baseline) today"
+      },
+      "cost_baseline_month": {
+        "name": "Cost without PV and battery (baseline) this month"
+      },
+      "cost_baseline_year": {
+        "name": "Cost without PV and battery (baseline) this year"
+      },
+      "cost_baseline_total": {
+        "name": "Cost without PV and battery (baseline) since start"
+      },
+      "cost_pv_today": {
+        "name": "Cost with PV only today"
+      },
+      "cost_pv_month": {
+        "name": "Cost with PV only this month"
+      },
+      "cost_pv_year": {
+        "name": "Cost with PV only this year"
+      },
+      "cost_pv_total": {
+        "name": "Cost with PV only since start"
+      },
+      "cost_pv_battery_today": {
+        "name": "Cost with PV and battery today"
+      },
+      "cost_pv_battery_month": {
+        "name": "Cost with PV and battery this month"
+      },
+      "cost_pv_battery_year": {
+        "name": "Cost with PV and battery this year"
+      },
+      "cost_pv_battery_total": {
+        "name": "Cost with PV and battery since start"
+      },
+      "saving_pv_today": {
+        "name": "Saving PV today"
+      },
+      "saving_pv_month": {
+        "name": "Saving PV this month"
+      },
+      "saving_pv_year": {
+        "name": "Saving PV this year"
+      },
+      "saving_pv_total": {
+        "name": "Saving PV since start"
+      },
+      "saving_pv_battery_today": {
+        "name": "Saving PV and battery today"
+      },
+      "saving_pv_battery_month": {
+        "name": "Saving PV and battery this month"
+      },
+      "saving_pv_battery_year": {
+        "name": "Saving PV and battery this year"
+      },
+      "saving_pv_battery_total": {
+        "name": "Saving PV and battery since start"
+      },
+      "saving_battery_today": {
+        "name": "Saving battery today"
+      },
+      "saving_battery_month": {
+        "name": "Saving battery this month"
+      },
+      "saving_battery_year": {
+        "name": "Saving battery this year"
+      },
+      "saving_battery_total": {
+        "name": "Saving battery since start"
+      },
+      "contract": {
+        "name": "{name}: cost of actual usage"
+      },
+      "gas_boiler_cost_today": {
+        "name": "Heating cost with a gas boiler today"
+      },
+      "gas_boiler_cost_month": {
+        "name": "Heating cost with a gas boiler this month"
+      },
+      "gas_boiler_cost_year": {
+        "name": "Heating cost with a gas boiler this year"
+      },
+      "gas_boiler_cost_total": {
+        "name": "Heating cost with a gas boiler since start"
+      },
+      "heat_pump_cost_today": {
+        "name": "Heating cost with the heat pump today"
+      },
+      "heat_pump_cost_month": {
+        "name": "Heating cost with the heat pump this month"
+      },
+      "heat_pump_cost_year": {
+        "name": "Heating cost with the heat pump this year"
+      },
+      "heat_pump_cost_total": {
+        "name": "Heating cost with the heat pump since start"
+      },
+      "saving_heat_pump_today": {
+        "name": "Saving heat pump today"
+      },
+      "saving_heat_pump_month": {
+        "name": "Saving heat pump this month"
+      },
+      "saving_heat_pump_year": {
+        "name": "Saving heat pump this year"
+      },
+      "saving_heat_pump_total": {
+        "name": "Saving heat pump since start"
+      },
+      "scenario_cost_baseline": {
+        "name": "Scenario: cost without PV and battery (baseline)"
+      },
+      "scenario_cost_pv": {
+        "name": "Scenario: cost with PV only"
+      },
+      "scenario_cost_pv_battery": {
+        "name": "Scenario: cost with PV and battery"
+      },
+      "scenario_saving_pv": {
+        "name": "Scenario: saving PV"
+      },
+      "scenario_saving_pv_battery": {
+        "name": "Scenario: saving PV and battery"
+      },
+      "scenario_saving_battery": {
+        "name": "Scenario: saving battery"
+      }
+    },
+    "select": {
+      "baseline": {
+        "name": "Baseline contract"
+      },
+      "actual": {
+        "name": "Actual supplier"
+      },
+      "scenario": {
+        "name": "Future scenario"
+      }
+    }
+  },
+  "issues": {
+    "tariff_errors": {
+      "title": "Tariff files have errors",
+      "description": "These tariff files could not be used: {errors}. They are in {folder}."
+    },
+    "stale_prices": {
+      "title": "Contract prices need a check",
+      "description": "The prices of {contracts} were last checked more than {days} days ago. Check them under Settings > Devices & services > Energy cost compare > Configure."
+    },
+    "price_proposal": {
+      "title": "New prices for {contract}",
+      "description": "Proposed on {proposed_on}, valid from {valid_from}. All amounts excl. VAT.\n\n{changes}\n\nSources:\n{sources}\n\nNote: {note}",
+      "fix_flow": {
+        "step": {
+          "init": {
+            "title": "New prices for {contract}",
+            "description": "Valid from {valid_from}. All amounts excl. VAT.\n\n{changes}\n\nSources:\n{sources}\n\nAccepting adds a price period from {valid_from}; earlier days keep their old prices. A later period gets a new value only where it had the same value as now.",
+            "menu_options": {
+              "accept": "Accept these prices",
+              "reject": "Reject"
+            }
+          }
+        },
+        "abort": {
+          "proposal_gone": "This proposal no longer exists.",
+          "proposal_invalid": "These prices can't be saved; check the contract file."
+        }
+      }
+    }
+  },
+  "services": {
+    "recalculate": {
+      "name": "Recalculate",
+      "description": "Read the energy history again from a date (default: the start date).",
+      "fields": {
+        "from_date": {
+          "name": "From date",
+          "description": "First day to recalculate"
+        }
+      }
+    },
+    "reload_tariffs": {
+      "name": "Reload tariffs",
+      "description": "Read the contract, tax and grid files again after editing them.",
+      "fields": {}
+    },
+    "propose_prices": {
+      "name": "Propose contract prices",
+      "description": "Offer new prices for a contract. They are only used after you accept the repair notice that appears.",
+      "fields": {
+        "contract_id": {
+          "name": "Contract",
+          "description": "Id of the contract, for example vattenfall_vast_1jaar"
+        },
+        "valid_from": {
+          "name": "Valid from",
+          "description": "First day of the new prices (default: today)"
+        },
+        "electricity": {
+          "name": "Electricity prices",
+          "description": "EUR excl. VAT: supply, markup, feed_in, feed_in_markup, feed_in_cost, fixed_per_month; feed_in_bonus as a share"
+        },
+        "gas": {
+          "name": "Gas prices",
+          "description": "EUR excl. VAT: supply, markup, fixed_per_month"
+        },
+        "sources": {
+          "name": "Sources",
+          "description": "Where the prices were found"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Shown with the proposal and saved with the contract"
+        },
+        "confidence": {
+          "name": "Confidence",
+          "description": "For example estimate or offer"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+# All amounts in euro EXCLUDING VAT. Dynamic: market price (EPEX) + markup.
+id: frank_energie_dynamisch
+name: Frank Energie dynamisch
+supplier: Frank Energie
+kind: dynamic
+checked_on: '2026-10-21'
+confidence: estimate
+sources:
+- https://jeroen.nl/dynamische-energie/aanbieders
+- https://zonnesaldo.nl/terugleverkosten-2027
+note: Amounts from jeroen.nl (Oct 2026), taken as incl. VAT and converted. Feed-in
+  assumed without 'Slim terugleveren' (1.27 ct incl. VAT deducted). With Slim terugleveren
+  Frank pays a bonus instead.
+periods:
+- valid_from: '2026-01-01'
+  electricity:
+    markup: 0.01504
+    feed_in_markup: -0.0105
+    feed_in_cost: 0.0
+    fixed_per_month: 5.992
+  gas:
+    markup: 0.066
+    fixed_per_month: 5.785

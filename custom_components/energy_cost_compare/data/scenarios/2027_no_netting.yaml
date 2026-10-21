@@ -1,0 +1,7 @@
+id: 2027_no_netting
+name: 2027 zonder salderen
+tariff_date: 2027-01-01     # every day priced with the tariffs valid on 1 January 2027
+netting: false
+note: >-
+  Salderen ends. Energy tax on every imported kWh; export earns only the feed-in
+  compensation of each contract's 2027 period, minus its feed-in costs.

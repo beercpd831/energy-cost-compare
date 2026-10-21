@@ -1,0 +1,31 @@
+# All amounts in euro EXCLUDING VAT. Dynamic: market price (EPEX) + markup.
+id: tibber_dynamisch
+name: Tibber dynamisch
+supplier: Tibber
+kind: dynamic
+checked_on: '2026-10-21'
+confidence: estimate
+sources:
+- https://jeroen.nl/dynamische-energie/aanbieders
+- https://zonnesaldo.nl/terugleverkosten-2027
+note: 'Amounts from jeroen.nl (Oct 2026), taken as incl. VAT and converted. 2026 feed-in:
+  market price minus 2.05 ct sales fee (excl. VAT); Tibber drops the fee from 2027.'
+periods:
+- valid_from: '2026-01-01'
+  electricity:
+    markup: 0.01488
+    feed_in_markup: -0.0205
+    feed_in_cost: 0.0
+    fixed_per_month: 5.777
+  gas:
+    markup: 0.0619
+    fixed_per_month: 4.95
+- valid_from: '2027-01-01'
+  electricity:
+    markup: 0.01488
+    feed_in_markup: 0.0
+    feed_in_cost: 0.0
+    fixed_per_month: 5.777
+  gas:
+    markup: 0.0619
+    fixed_per_month: 4.95

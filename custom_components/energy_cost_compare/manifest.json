@@ -1,0 +1,12 @@
+{
+  "domain": "energy_cost_compare",
+  "name": "Energy cost compare",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["recorder"],
+  "documentation": "https://github.com/",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "0.1.0"
+}

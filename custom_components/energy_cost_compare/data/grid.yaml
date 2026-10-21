@@ -1,0 +1,19 @@
+# Grid operator (netbeheerder) costs, euro EXCLUDING VAT. The same for every supplier.
+# Liander, 3x25A with a smart meter ("bemeten"): aansluitdienst + transportdienst
+# (vastrecht and capaciteit) + meetdienst = 395.0760 per year excl. VAT (478.04 incl.).
+# Gas: G4/G6, 500-4000 m3/year, 220.35 per year excl. VAT; only used by the gas boiler
+# comparison, since the house has no gas connection.
+# Sources:
+#   https://www.liander.nl/-/media/files/tarieven/consument/2026/jaarlijkse-netwerkkosten-stroom-2026-v10.pdf
+#   https://www.liander.nl/-/media/files/tarieven/consument/2026/jaarlijkse-netwerkkosten-gas-2026-v10.pdf
+# Liander publishes the 2027 tariffs in November or December; until then 2026 applies.
+# Time-dependent tariffs can be added as slots, for example:
+#   slots:
+#     - {from: "17:00", to: "21:00", per_kwh: 0.05}
+operator: Liander
+connection: 3x25A
+periods:
+  - valid_from: 2026-01-01
+    electricity_per_month: 32.9230
+    gas_per_month: 18.3625
+    slots: []
