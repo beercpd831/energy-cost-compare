@@ -245,6 +245,8 @@ class ContractSensor(LedgerEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL
     _attr_suggested_display_precision = 2
     _attr_translation_key = "contract"
+    # Static details; keep them out of the recorder database.
+    _unrecorded_attributes = frozenset({"note", "sources", "price_periods"})
 
     def __init__(self, coordinator: LedgerCoordinator, contract_id: str) -> None:
         super().__init__(coordinator, f"contract_{contract_id}")
@@ -275,6 +277,10 @@ class ContractSensor(LedgerEntity, SensorEntity):
             "prices_age_days": (dt_util.now().date() - contract.checked_on).days,
             "note": contract.note,
             "sources": contract.sources,
+            # All amounts excl. VAT; read by the monthly price check to compare offers.
+            "price_periods": [
+                {"valid_from": valid_from.isoformat(), **values} for valid_from, values in contract.periods.items
+            ],
         }
         for situation, label in (("A", "no_pv"), ("B", "pv"), ("C", "pv_battery")):
             days = self.coordinator.costs_for(self.contract_id, situation)

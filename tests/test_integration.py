@@ -106,6 +106,9 @@ async def test_ledger_from_hourly_statistics(
     # Costs: 8 shipped contracts priced, and the sensors filled in.
     assert len(coordinator.summary.costs) == 8
     # The price sensor includes VAT: 0.121 / 1.21 = 0.10 excl. VAT.
+    vattenfall = hass.states.get("sensor.energy_cost_compare_vattenfall_1_jaar_vast_cost_of_actual_usage")
+    assert vattenfall is not None
+    assert vattenfall.attributes["price_periods"][0]["electricity"]["supply"] == pytest.approx(0.1846)
     zonneplan_c = coordinator.costs_for("zonneplan_dynamisch", "C")
     assert zonneplan_c and zonneplan_c[0].missing_prices == 0
     baseline = hass.states.get("sensor.energy_cost_compare_cost_without_pv_and_battery_baseline_since_start")
