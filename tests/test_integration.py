@@ -20,6 +20,8 @@ COUNTERS = {
     "sensor.pv": 1.0,
     "sensor.inv_in": 0.4,
     "sensor.inv_out": 0.1,
+    "sensor.heat": 2.0,
+    "sensor.hp": 0.5,
 }
 
 
@@ -75,6 +77,8 @@ async def test_ledger_from_hourly_statistics(
             "pv": ["sensor.pv"],
             "inv_in": ["sensor.inv_in"],
             "inv_out": ["sensor.inv_out"],
+            "heat": ["sensor.heat"],
+            "hp_elec": ["sensor.hp"],
             "price_sensor": "sensor.price",
             "price_includes_vat": True,
             "start_date": start_day.isoformat(),
@@ -117,3 +121,9 @@ async def test_ledger_from_hourly_statistics(
     assert future is not None and future.attributes["scenario"] == "2027 zonder salderen"
     assert "annual_estimate" in future.attributes
     assert coordinator.summary.scenario_costs
+
+    # Gas comparison on the average of the fixed contracts.
+    heat = hass.states.get("sensor.energy_cost_compare_saving_heat_pump_since_start")
+    assert heat is not None and heat.state not in ("unknown", "unavailable")
+    assert heat.attributes["heat_kwh"] == pytest.approx(2.0 * hours, abs=0.1)
+    assert heat.attributes["heat_pump_kwh"] == pytest.approx(0.5 * hours, abs=0.1)

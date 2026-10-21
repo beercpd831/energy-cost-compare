@@ -416,10 +416,20 @@ def _average(series: list[list[DayCost]]) -> list[DayCost]:
     """Average day by day over several contracts (days missing in one are skipped)."""
     if not series:
         return []
-    by_day: dict[date, list[float]] = {}
+    by_day: dict[date, list[DayCost]] = {}
     for days in series:
         for d in days:
-            by_day.setdefault(d.day, []).append(d.total)
-    return [
-        DayCost(day, sum(v) / len(v)) for day, v in sorted(by_day.items()) if len(v) == len(series)
-    ]
+            by_day.setdefault(d.day, []).append(d)
+    averaged = []
+    for day, found in sorted(by_day.items()):
+        if len(found) != len(series):
+            continue
+        keys = {k for d in found for k in d.parts}
+        parts = {k: sum(d.parts.get(k, 0.0) for d in found) / len(found) for k in keys}
+        averaged.append(DayCost(
+            day,
+            sum(d.total for d in found) / len(found),
+            parts,
+            max(d.missing_prices for d in found),
+        ))
+    return averaged

@@ -115,6 +115,7 @@ def price_situation(
     tax = grid = {}
     last_epex: float | None = None
     missing = 0
+    estimates = estimate_missing_prices(intervals) if contract.kind != FIXED else {}
 
     def close_day() -> None:
         nonlocal previous, missing
@@ -154,7 +155,7 @@ def price_situation(
         imp, exp = interval.situation(situation)
         epex = interval.values.get("epex")
         if epex is None:
-            epex = last_epex
+            epex = estimates.get(interval.start, last_epex)
             if contract.kind != FIXED:
                 missing += 1
         else:
@@ -182,6 +183,35 @@ def price_situation(
     if current_day is not None and year is not None and rates is not None:
         close_day()
     return days
+
+
+DAY_S = 86400
+# Look this many days back and ahead for a price at the same time of day.
+ESTIMATE_DAYS = 7
+
+
+def estimate_missing_prices(intervals: list[Interval]) -> dict[int, float]:
+    """A price for each interval without one: the average of the same quarter on the
+    nearest earlier and later day that have a price (or the one that exists).
+
+    Day-ahead prices follow a daily pattern, so this is much closer than repeating the
+    last known price for hours on end, for example when the price sensor was down.
+    """
+    prices = {i.start: i.values["epex"] for i in intervals if i.values.get("epex") is not None}
+    estimates: dict[int, float] = {}
+    for interval in intervals:
+        if interval.start in prices:
+            continue
+        found = []
+        for direction in (-1, 1):
+            for days in range(1, ESTIMATE_DAYS + 1):
+                price = prices.get(interval.start + direction * days * DAY_S)
+                if price is not None:
+                    found.append(price)
+                    break
+        if found:
+            estimates[interval.start] = sum(found) / len(found)
+    return estimates
 
 
 def _slot_price(grid: dict, moment: datetime) -> float:

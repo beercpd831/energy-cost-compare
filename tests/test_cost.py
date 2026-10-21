@@ -184,3 +184,12 @@ def test_daytime_feed_in_bonus():
     assert days[1].total == pytest.approx(-4 * (0.20 + 0.01))
     # No bonus on a negative price.
     assert days[2].total == pytest.approx(-4 * (-0.05 + 0.01))
+
+
+def test_missing_price_estimated_from_neighbouring_days():
+    contract = _contract("dynamic", markup=0.0)
+    intervals = _day(1, 1, 0, epex=0.20) + _day(2, 1, 0) + _day(3, 1, 0, epex=0.30)
+    days = price_situation(intervals, contract, _tariffs(netting=False), "C", UTC)
+    # Same time of day on the days before and after: (0.20 + 0.30) / 2, plus 0.10 tax.
+    assert days[1].total == pytest.approx(0.35)
+    assert days[1].missing_prices == 1
