@@ -9,9 +9,9 @@ sources:
 - https://jeroen.nl/dynamische-energie/aanbieders
 - https://zonnesaldo.nl/terugleverkosten-2027
 note: Amounts from jeroen.nl (Oct 2026), taken as incl. VAT and converted. Markup
-  confirmed against your Zonneplan and ENTSO-e price sensors (constant 0.02 incl.
+  checked against Zonneplan's and ENTSO-e's price sensors (constant 0.02 incl.
   VAT). Zonnebonus, 10% extra on a positive market price for feed-in between sunrise
-  and sunset (feed_in_bonus), as in Peter's Node-RED DESS formula of 21 Oct 2026.
+  and sunset (feed_in_bonus), as used in a Victron DESS sell-price formula (Oct 2026).
 periods:
 - valid_from: '2026-01-01'
   electricity:

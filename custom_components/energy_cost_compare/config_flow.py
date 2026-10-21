@@ -51,8 +51,8 @@ SUGGESTED: dict[str, list[str]] = {
     CONF_HEAT: ["sensor.boiler_nrgsuppheating", "sensor.boiler_nrgsuppww"],
     CONF_HP_ELEC: ["sensor.power_meter_wp_s02_total_energy"],
 }
-# A market price sensor, for example from the ENTSO-e integration.
-SUGGESTED_PRICE = "sensor.peter_current_electricity_market_price"
+# The ENTSO-e integration names its price sensor sensor.<prefix>_current_electricity_market_price.
+SUGGESTED_PRICE_SUFFIX = "current_electricity_market_price"
 
 ENERGY_SELECTOR = selector.EntitySelector(
     selector.EntitySelectorConfig(domain="sensor", device_class="energy", multiple=True)
@@ -68,8 +68,11 @@ def _schema(hass, defaults: dict[str, Any]) -> vol.Schema:
         marker = vol.Required if key in REQUIRED_KEYS else vol.Optional
         fields[marker(key, description={"suggested_value": suggested})] = ENERGY_SELECTOR
     price = defaults.get(CONF_PRICE_SENSOR)
-    if price is None and hass.states.get(SUGGESTED_PRICE):
-        price = SUGGESTED_PRICE
+    if price is None:
+        price = next(
+            (e for e in sorted(hass.states.async_entity_ids("sensor")) if e.endswith(SUGGESTED_PRICE_SUFFIX)),
+            None,
+        )
     fields[vol.Optional(CONF_PRICE_SENSOR, description={"suggested_value": price})] = (
         selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))
     )
