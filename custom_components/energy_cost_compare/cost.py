@@ -168,7 +168,8 @@ def price_situation(
         else:
             supply_price = market + rates.markup * scenario.supply_factor
             feed_rate = market + rates.feed_in_markup * scenario.feed_in_factor
-            if rates.feed_in_bonus and market > 0 and daylight is not None and daylight(interval.start):
+            if (rates.feed_in_bonus and market >= rates.feed_in_bonus_min_price
+                    and daylight is not None and daylight(interval.start)):
                 feed_rate += market * rates.feed_in_bonus
         grid_price = _slot_price(grid, datetime.fromtimestamp(interval.start, tz)) * scenario.grid_factor
 

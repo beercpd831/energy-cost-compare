@@ -173,17 +173,20 @@ def test_gas_comparison():
 
 
 def test_daytime_feed_in_bonus():
-    contract = _contract("dynamic", markup=0.0, feed_in_markup=0.01, feed_in_bonus=0.1)
+    contract = _contract("dynamic", markup=0.0, feed_in_markup=0.01, feed_in_bonus=0.1,
+                         feed_in_bonus_min_price=-0.02)
     day = _day(1, 0, 4, epex=0.20)
     night = _day(2, 0, 4, epex=0.20)
-    negative = _day(3, 0, 4, epex=-0.05)
-    sun_up = {day[0].start, negative[0].start}
-    days = price_situation(day + night + negative, contract, _tariffs(netting=False), "C", UTC,
-                           daylight=lambda ts: ts in sun_up)
+    slightly_negative = _day(3, 0, 4, epex=-0.01)
+    negative = _day(4, 0, 4, epex=-0.05)
+    sun_up = {day[0].start, slightly_negative[0].start, negative[0].start}
+    days = price_situation(day + night + slightly_negative + negative, contract, _tariffs(netting=False),
+                           "C", UTC, daylight=lambda ts: ts in sun_up)
     assert days[0].total == pytest.approx(-4 * (0.20 * 1.1 + 0.01))
     assert days[1].total == pytest.approx(-4 * (0.20 + 0.01))
-    # No bonus on a negative price.
-    assert days[2].total == pytest.approx(-4 * (-0.05 + 0.01))
+    assert days[2].total == pytest.approx(-4 * (-0.01 * 1.1 + 0.01))
+    # No bonus below the minimum price.
+    assert days[3].total == pytest.approx(-4 * (-0.05 + 0.01))
 
 
 def test_missing_price_estimated_from_neighbouring_days():

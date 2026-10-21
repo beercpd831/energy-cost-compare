@@ -386,6 +386,7 @@ FIELD_LABELS = {
     "feed_in_cost": "feed-in costs (EUR/kWh)",
     "fixed_per_month": "fixed costs electricity (EUR/month)",
     "feed_in_bonus": "daytime feed-in bonus (share of market price)",
+    "feed_in_bonus_min_price": "no feed-in bonus below this market price (EUR/kWh)",
     "gas_supply": "gas supply (EUR/m³)",
     "gas_markup": "gas markup (EUR/m³)",
     "gas_fixed_per_month": "fixed costs gas (EUR/month)",

@@ -121,7 +121,9 @@ class EnergyCostCompareConfigFlow(ConfigFlow, domain=DOMAIN):
 
 # Price fields shown in the options screen, per contract kind.
 FIXED_FIELDS = ("supply", "feed_in", "feed_in_cost", "fixed_per_month")
-DYNAMIC_FIELDS = ("markup", "feed_in_markup", "feed_in_bonus", "feed_in_cost", "fixed_per_month")
+DYNAMIC_FIELDS = (
+    "markup", "feed_in_markup", "feed_in_bonus", "feed_in_bonus_min_price", "feed_in_cost", "fixed_per_month",
+)
 GAS_FIXED_FIELDS = ("supply", "fixed_per_month")
 GAS_DYNAMIC_FIELDS = ("markup", "fixed_per_month")
 PRICE_SELECTOR = selector.NumberSelector(

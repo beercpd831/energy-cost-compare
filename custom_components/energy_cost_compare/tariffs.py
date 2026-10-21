@@ -82,9 +82,11 @@ class ElectricityRates:
     feed_in_markup: float  # dynamic: added to the market price for export (may be negative)
     feed_in_cost: float  # EUR per exported kWh charged by the supplier
     fixed_per_month: float
-    # dynamic: extra share of a positive market price for export between sunrise and
-    # sunset (Zonneplan's zonnebonus: 0.10)
+    # dynamic: extra share of the market price for export between sunrise and sunset
+    # (Zonneplan's zonnebonus: 0.10), when the market price is at least
+    # feed_in_bonus_min_price (Zonneplan: none below -2 cent incl. VAT)
     feed_in_bonus: float = 0.0
+    feed_in_bonus_min_price: float = 0.0
 
 
 @dataclass
@@ -112,6 +114,7 @@ class Contract:
             feed_in_cost=_num(e, "feed_in_cost", where, 0.0),
             fixed_per_month=_num(e, "fixed_per_month", where, 0.0),
             feed_in_bonus=_num(e, "feed_in_bonus", where, 0.0),
+            feed_in_bonus_min_price=_num(e, "feed_in_bonus_min_price", where, 0.0),
         )
 
     def gas(self, day: date) -> dict[str, float] | None:
@@ -286,6 +289,7 @@ def save_period(
 PROPOSAL_DIR = "proposals"
 ELECTRICITY_FIELDS = (
     "supply", "markup", "feed_in", "feed_in_markup", "feed_in_cost", "fixed_per_month", "feed_in_bonus",
+    "feed_in_bonus_min_price",
 )
 GAS_FIELDS = ("supply", "markup", "fixed_per_month")
 

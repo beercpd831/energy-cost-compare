@@ -10,14 +10,15 @@ sources:
 - https://zonnesaldo.nl/terugleverkosten-2027
 note: Amounts from jeroen.nl (Oct 2026), taken as incl. VAT and converted. Markup
   checked against Zonneplan's and ENTSO-e's price sensors (constant 0.02 incl.
-  VAT). Zonnebonus, 10% extra on a positive market price for feed-in between sunrise
-  and sunset (feed_in_bonus), as used in a Victron DESS sell-price formula (Oct 2026).
+  VAT). Zonnebonus, 10% of the market price extra for feed-in between sunrise
+  and sunset (feed_in_bonus), not below -2 cent incl. VAT (feed_in_bonus_min_price), as used in a Victron DESS sell-price formula (Oct 2026).
 periods:
 - valid_from: '2026-01-01'
   electricity:
     markup: 0.01653
     feed_in_markup: 0.01653
     feed_in_bonus: 0.1
+    feed_in_bonus_min_price: -0.01653
     feed_in_cost: 0.0
     fixed_per_month: 5.165
   gas:
