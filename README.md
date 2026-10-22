@@ -94,6 +94,10 @@ heffingskorting are spread per day. VAT is applied over the whole bill.
 - Costs per period (today, this month, this year, since start): baseline without PV
   and battery (A), PV only (B), PV and battery (C), and the savings A−B, A−C and B−C.
   Saving sensors carry the kWh differences and the same comparison on one contract.
+  Cost sensors also carry import and export the way a supplier app shows them
+  (`import_eur`, `import_price`, `export_eur`, `export_price`, `energy_net_eur`): every
+  kWh at its quarter's price incl. energy tax and VAT, fed-in kWh credited with the tax
+  while salderen applies, without fixed costs and without the yearly netting balance.
 - Scenario sensors: the same costs and savings since the start, replayed under the
   selected scenario, with a rough annual estimate.
 - One sensor per contract: what your actual usage would have cost, with details.

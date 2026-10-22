@@ -46,6 +46,26 @@ def period_sum(days: list[DayCost] | None, period: str) -> float | None:
     return sum(d.total for d in days if start is None or d.day >= start)
 
 
+def period_settled(days: list[DayCost] | None, period: str) -> dict[str, float]:
+    """Import and export as a supplier app shows them: kWh, euro and average price."""
+    start = period_start(period)
+    totals: dict[str, float] = {}
+    for d in days or []:
+        if start is None or d.day >= start:
+            for key, value in d.settled.items():
+                totals[key] = totals.get(key, 0.0) + value
+    if not totals:
+        return {}
+    imp, exp = totals.get("import_kwh", 0.0), totals.get("export_kwh", 0.0)
+    return {
+        "import_eur": round(totals.get("import_eur", 0.0), 2),
+        "import_price": round(totals["import_eur"] / imp, 4) if imp else None,
+        "export_eur": round(totals.get("export_eur", 0.0), 2),
+        "export_price": round(totals["export_eur"] / exp, 4) if exp else None,
+        "energy_net_eur": round(totals.get("import_eur", 0.0) - totals.get("export_eur", 0.0), 2),
+    }
+
+
 def period_energy(summary: Summary, situation: str, period: str) -> tuple[float, float]:
     start = period_start(period)
     imp = exp = 0.0
@@ -219,6 +239,9 @@ class CostSensor(LedgerEntity, SensorEntity):
             attrs["annual_estimate"] = round(self.native_value * 365 / days)
         imp, exp = period_energy(summary, first[1], self.period)
         attrs.update(grid_import_kwh=round(imp, 2), grid_export_kwh=round(exp, 2))
+        if second is None:
+            days = self.coordinator.costs_for(self._contract(first[0]), first[1], self.scenario)
+            attrs.update(period_settled(days, self.period))
         if second is not None:
             imp2, exp2 = period_energy(summary, second[1], self.period)
             attrs.update(

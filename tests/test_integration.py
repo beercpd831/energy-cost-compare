@@ -116,6 +116,8 @@ async def test_ledger_from_hourly_statistics(
     # energy tax reduction, so the total can be anything. It has to be a number.
     assert baseline is not None
     float(baseline.state)
+    # Import and export as a supplier app shows them.
+    assert "import_eur" in baseline.attributes and "export_eur" in baseline.attributes
     saving = hass.states.get("sensor.energy_cost_compare_saving_pv_and_battery_since_start")
     assert saving is not None and saving.state not in ("unknown", "unavailable")
     assert hass.states.get("select.energy_cost_compare_baseline_contract").state == "average_fixed"

@@ -435,10 +435,13 @@ def _average(series: list[list[DayCost]]) -> list[DayCost]:
             continue
         keys = {k for d in found for k in d.parts}
         parts = {k: sum(d.parts.get(k, 0.0) for d in found) / len(found) for k in keys}
+        settled_keys = {k for d in found for k in d.settled}
+        settled = {k: sum(d.settled.get(k, 0.0) for d in found) / len(found) for k in settled_keys}
         averaged.append(DayCost(
             day,
             sum(d.total for d in found) / len(found),
             parts,
             max(d.missing_prices for d in found),
+            settled,
         ))
     return averaged

@@ -16,6 +16,7 @@ from datetime import date, datetime, tzinfo
 from .calc import Interval
 from .tariffs import FIXED, Contract, TariffSet
 
+SETTLED = ("import_kwh", "import_eur", "export_kwh", "export_eur")
 COMPONENTS = ("supply", "feed_in", "feed_in_cost", "energy_tax", "fixed", "grid", "tax_reduction", "vat")
 
 
@@ -110,6 +111,11 @@ class DayCost:
     total: float
     parts: dict[str, float] = field(default_factory=dict)
     missing_prices: int = 0
+    # The day's energy as a supplier app shows it, euro incl. VAT: every kWh at the
+    # price of its quarter, energy tax included and fed-in kWh credited with the tax
+    # as long as netting applies. Keys: import_kwh, import_eur, export_kwh, export_eur.
+    # Unlike the bill this ignores the yearly netting balance and fixed costs.
+    settled: dict[str, float] = field(default_factory=dict)
 
 
 def _days_in_year(day: date) -> int:
@@ -139,13 +145,15 @@ def price_situation(
     tax = grid = {}
     last_epex: float | None = None
     missing = 0
+    settled = dict.fromkeys(SETTLED, 0.0)
     estimates = estimate_missing_prices(intervals) if contract.kind != FIXED else {}
 
     def close_day() -> None:
-        nonlocal previous, missing
+        nonlocal previous, missing, settled
         bill = year.bill(contract.kind)
         delta = {k: bill[k] - previous.get(k, 0.0) for k in bill}
-        days.append(DayCost(current_day, delta.pop("total"), delta, missing))
+        days.append(DayCost(current_day, delta.pop("total"), delta, missing, settled))
+        settled = dict.fromkeys(SETTLED, 0.0)
         previous = bill
         missing = 0
 
@@ -218,6 +226,18 @@ def price_situation(
         year.feed_cost += rates.feed_in_cost * scenario.feed_in_factor * exp
         year.tax += float(tax.get("electricity_tax", 0.0)) * scenario.tax_factor * imp
         year.grid += grid_price * imp
+
+        energy_tax = float(tax.get("electricity_tax", 0.0)) * scenario.tax_factor
+        if year.netting:
+            # Netted: a fixed contract credits the supply price, a dynamic one the feed-in rate.
+            export_rate = (supply_price if contract.kind == FIXED else feed_rate) + energy_tax
+        else:
+            export_rate = feed_rate
+        export_rate -= rates.feed_in_cost * scenario.feed_in_factor
+        settled["import_kwh"] += imp
+        settled["import_eur"] += (supply_price + energy_tax) * imp * (1 + year.vat)
+        settled["export_kwh"] += exp
+        settled["export_eur"] += export_rate * exp * (1 + year.vat)
 
     if current_day is not None and year is not None and rates is not None:
         close_day()

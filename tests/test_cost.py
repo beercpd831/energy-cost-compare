@@ -238,3 +238,18 @@ def test_time_of_use_supply_slots():
     assert days[-1].parts["supply"] == pytest.approx(5 * 0.10)
     with pytest.raises(TariffError):
         _contract("fixed", supply=0.30, supply_slots=[{"from": "25:00", "to": "05:00", "supply": 0.1}])
+
+
+def test_settled_like_supplier_app():
+    contract = _contract("dynamic", markup=0.02, feed_in_markup=0.01)
+    days = price_situation(_day(1, 10, 4, epex=0.10), contract, _tariffs(), "C", UTC)
+    settled = days[-1].settled
+    assert settled["import_kwh"] == pytest.approx(10)
+    assert settled["import_eur"] == pytest.approx(10 * (0.10 + 0.02 + 0.10))
+    # Netting: fed-in kWh are credited with the energy tax too.
+    assert settled["export_eur"] == pytest.approx(4 * (0.10 + 0.01 + 0.10))
+    days = price_situation(_day(1, 10, 4, epex=0.10), contract, _tariffs(netting=False), "C", UTC)
+    assert days[-1].settled["export_eur"] == pytest.approx(4 * (0.10 + 0.01))
+    fixed = _contract("fixed", supply=0.25, feed_in=0.05, feed_in_cost=0.02)
+    days = price_situation(_day(1, 10, 4), fixed, _tariffs(), "C", UTC)
+    assert days[-1].settled["export_eur"] == pytest.approx(4 * (0.25 + 0.10 - 0.02))
