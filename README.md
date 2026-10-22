@@ -3,8 +3,9 @@
 A Home Assistant integration that shows what solar panels and a home battery save,
 compared with ordinary fixed-price and dynamic Dutch energy contracts.
 
-Status: energy ledger, contracts, cost engine, 2027 scenarios and the gas comparison
-are built. The dashboard follows once the integration runs in Home Assistant.
+Status: in use. Energy ledger, contracts (fixed, time-of-use and dynamic), cost engine,
+2027 scenarios, price proposals and the gas comparison are built. Notes for AI
+assistants working on the code are in [AGENTS.md](AGENTS.md).
 
 ## How it works
 
