@@ -26,6 +26,26 @@ of the house load; they're reported separately.
 History older than about 9 days comes from hourly statistics and is spread evenly over
 the four quarters of each hour.
 
+## Where everything is stored
+
+Everything lives in the Home Assistant configuration folder (`/config`, also reachable
+through the Samba share or File editor app as `config`):
+
+| What | Where | Notes |
+| --- | --- | --- |
+| Integration code | `/config/custom_components/energy_cost_compare/` | Installed and updated by HACS. Don't edit: an update overwrites it. |
+| Quarter-hour ledger | `/config/energy_cost_compare/<entry_id>_ledger.db` | SQLite. Import, export, PV, battery, heat pump and market price per 15 minutes. The only place quarter-hour data is kept for longer than ~9 days. |
+| Tariff files | `/config/energy_cost_compare/tariffs/` | `taxes.yaml`, `grid.yaml`, `contracts/*.yaml`, `scenarios/*.yaml`. Copied from the defaults on first start, then yours: updates never overwrite them. |
+| Price proposals | `/config/energy_cost_compare/tariffs/proposals/` | Waiting proposals; removed when accepted or rejected. |
+| Settings (counters, price sensor, start date) | `/config/.storage/core.config_entries` | Change them under Settings → Devices & services → Energy cost compare → Configure, never in the file. |
+| Proposal notices | `/config/.storage/repairs.issue_registry` | Shown under Settings → Repairs. |
+| Sensor history and statistics | `/config/home-assistant_v2.db` | Home Assistant's recorder database. Long-term statistics (the daily bars in graphs) are kept indefinitely. |
+| Dashboards | `/config/.storage/lovelace*` | Edit in the dashboard editor. |
+
+A full Home Assistant backup includes all of it (`/config` plus the database). If the
+ledger is lost, the integration rebuilds it from the recorder's statistics: 5-minute
+detail for the last ~9 days, hourly values spread over four quarters before that.
+
 ## Installation (HACS)
 
 1. HACS → three dots → Custom repositories → add this repository as type *Integration*.

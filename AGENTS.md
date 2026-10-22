@@ -12,6 +12,9 @@ B: PV only, simulated, C: PV and battery, measured), compares contracts (fixed a
 dynamic), replays the end of salderen in 2027 as a scenario, and compares heating with a
 heat pump against a gas boiler.
 
+Where the integration keeps its data on the Home Assistant machine: see "Where everything
+is stored" in the README.
+
 ## Layout
 
 | File | Role |
