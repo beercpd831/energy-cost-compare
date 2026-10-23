@@ -66,6 +66,17 @@ def period_settled(days: list[DayCost] | None, period: str) -> dict[str, float]:
     }
 
 
+def period_parts(days: list[DayCost] | None, period: str) -> dict[str, float]:
+    """The period's bill per component (supply, feed_in, ..., vat), euro incl. VAT."""
+    start = period_start(period)
+    parts: dict[str, float] = {}
+    for d in days or []:
+        if start is None or d.day >= start:
+            for key, value in d.parts.items():
+                parts[key] = parts.get(key, 0.0) + value
+    return {k: round(v, 2) for k, v in parts.items()}
+
+
 def period_energy(summary: Summary, situation: str, period: str) -> tuple[float, float]:
     start = period_start(period)
     imp = exp = 0.0
@@ -242,6 +253,7 @@ class CostSensor(LedgerEntity, SensorEntity):
         if second is None:
             days = self.coordinator.costs_for(self._contract(first[0]), first[1], self.scenario)
             attrs.update(period_settled(days, self.period))
+            attrs["bill"] = period_parts(days, self.period)
         if second is not None:
             imp2, exp2 = period_energy(summary, second[1], self.period)
             attrs.update(

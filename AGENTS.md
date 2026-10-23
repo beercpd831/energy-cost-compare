@@ -84,7 +84,8 @@ is stored" in the README.
   entity ids with the area name. Dashboards should match contract sensors by pattern
   (`energy_cost_compare_.+_kosten_van_werkelijk_verbruik$`) rather than by a fixed list.
 - Cost sensors carry `grid_import_kwh`, `grid_export_kwh` and the supplier-app view
-  (`import_eur`, `import_price`, `export_eur`, `export_price`, `energy_net_eur`).
+  (`import_eur`, `import_price`, `export_eur`, `export_price`, `energy_net_eur`) and
+  `bill`, the period's bill per component.
 
 ## Development
 

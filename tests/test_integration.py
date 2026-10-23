@@ -118,6 +118,8 @@ async def test_ledger_from_hourly_statistics(
     float(baseline.state)
     # Import and export as a supplier app shows them.
     assert "import_eur" in baseline.attributes and "export_eur" in baseline.attributes
+    bill = baseline.attributes["bill"]
+    assert {"supply", "energy_tax", "fixed", "grid", "tax_reduction"} <= set(bill)
     saving = hass.states.get("sensor.energy_cost_compare_saving_pv_and_battery_since_start")
     assert saving is not None and saving.state not in ("unknown", "unavailable")
     assert hass.states.get("select.energy_cost_compare_baseline_contract").state == "average_fixed"
