@@ -11,7 +11,7 @@ from pathlib import Path
 from astral import Observer
 from astral.sun import sun
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -56,6 +56,11 @@ _LOGGER = logging.getLogger(__name__)
 
 # Read at most this much history per pass, so a long backfill doesn't hold the recorder.
 CHUNK = timedelta(days=1)
+# Gas market prices come from Home Assistant's EnergyZero integration, when it is set up.
+GAS_PRICE_DOMAIN = "energyzero"
+GAS_DAY_START_HOUR = 6
+GAS_PRICE_RETRY = timedelta(hours=1)
+GAS_PRICE_CHUNK_DAYS = 31
 SITUATIONS = ("A", "B", "C")
 
 
@@ -73,7 +78,8 @@ class Summary:
     # The same, replayed under the selected scenario.
     scenario_costs: dict[str, dict[str, list[DayCost]]] = field(default_factory=dict)
     scenario_average_fixed: dict[str, list[DayCost]] = field(default_factory=dict)
-    # Gas comparison per fixed contract and for the average: (gas boiler, heat pump) days.
+    # Gas comparison per contract and for the fixed average: (gas boiler, heat pump) days.
+    # Dynamic contracts are only included once gas market prices are known.
     heat: dict[str, tuple[list[DayCost], list[DayCost]]] = field(default_factory=dict)
     # Energy per local day: day -> situation -> (import, export)
     energy_by_day: dict[date, dict[str, tuple[float, float]]] = field(default_factory=dict)
@@ -96,6 +102,7 @@ class LedgerCoordinator:
         self.scenario: str = DEFAULT_SCENARIO
         self._lock = asyncio.Lock()
         self._unsub = None
+        self._gas_prices_tried: datetime | None = None
 
     @property
     def config(self) -> dict:
@@ -258,6 +265,11 @@ class LedgerCoordinator:
                 await self._fill()
             except Exception:  # keep the schedule alive; the next tick retries
                 _LOGGER.exception("Updating the energy ledger failed")
+            if self.config.get(CONF_HEAT):
+                try:
+                    await self._fill_gas_prices()
+                except Exception:  # noqa: BLE001 - optional source; retried later
+                    _LOGGER.warning("Reading gas market prices failed", exc_info=True)
             self._update_issues()
             self.summary = await self.hass.async_add_executor_job(self._summarise)
         async_dispatcher_send(self.hass, SIGNAL_LEDGER_UPDATED, self.entry.entry_id)
@@ -289,6 +301,51 @@ class LedgerCoordinator:
                 break
             start = chunk_end
 
+    async def _fill_gas_prices(self) -> None:
+        """Store the daily gas market price for days that don't have one yet."""
+        entries = [
+            e for e in self.hass.config_entries.async_entries(GAS_PRICE_DOMAIN)
+            if e.state is ConfigEntryState.LOADED
+        ]
+        if not entries:
+            return
+        now = dt_util.now()
+        if self._gas_prices_tried and now - self._gas_prices_tried < GAS_PRICE_RETRY:
+            return
+        known = await self.hass.async_add_executor_job(self.ledger.gas_prices)
+        # The gas day runs from 06:00 to 06:00; today's price exists from 06:00.
+        last = now.date() if now.hour >= GAS_DAY_START_HOUR else now.date() - timedelta(days=1)
+        day = self.start.date()
+        missing = []
+        while day <= last:
+            if day not in known:
+                missing.append(day)
+            day += timedelta(days=1)
+        if not missing:
+            return
+        self._gas_prices_tried = now
+        found: dict[date, float] = {}
+        first = missing[0]
+        while first <= missing[-1]:
+            end = min(missing[-1], first + timedelta(days=GAS_PRICE_CHUNK_DAYS - 1))
+            response = await self.hass.services.async_call(
+                GAS_PRICE_DOMAIN,
+                "get_gas_prices",
+                {
+                    "config_entry": entries[0].entry_id,
+                    "incl_vat": False,
+                    "start": f"{first.isoformat()} {GAS_DAY_START_HOUR:02d}:00:00",
+                    "end": f"{end.isoformat()} {GAS_DAY_START_HOUR + 1:02d}:00:00",
+                },
+                blocking=True,
+                return_response=True,
+            )
+            found.update(_gas_prices_by_day(response))
+            first = end + timedelta(days=1)
+        found = {d: p for d, p in found.items() if d in missing}
+        if found:
+            await self.hass.async_add_executor_job(self.ledger.upsert_gas_prices, found)
+
     def _summarise(self) -> Summary:
         tz = dt_util.get_default_time_zone()
         start_ts = int(self.start.timestamp())
@@ -316,11 +373,12 @@ class LedgerCoordinator:
             )
             if self.config.get(CONF_HEAT):
                 efficiency = float(self.config.get(CONF_BOILER_EFFICIENCY, 0.9))
-                for contract_id in self.fixed_contracts:
-                    summary.heat[contract_id] = price_heat(
-                        intervals, self.tariffs.contracts[contract_id], self.tariffs, tz, efficiency
-                    )
-                per_contract = [summary.heat[c] for c in self.fixed_contracts]
+                gas_market = self.ledger.gas_prices()
+                for contract_id, contract in self.tariffs.contracts.items():
+                    days = price_heat(intervals, contract, self.tariffs, tz, efficiency, gas_market)
+                    if days[0]:
+                        summary.heat[contract_id] = days
+                per_contract = [summary.heat[c] for c in self.fixed_contracts if c in summary.heat]
                 summary.heat[BASELINE_AVERAGE] = (
                     _average([g for g, _ in per_contract]),
                     _average([h for _, h in per_contract]),
@@ -357,6 +415,19 @@ class LedgerCoordinator:
             return average.get(situation)
         by_situation = costs.get(contract)
         return by_situation.get(situation) if by_situation else None
+
+
+def _gas_prices_by_day(response) -> dict[date, float]:
+    """EnergyZero's get_gas_prices response as price per local date (gas day start)."""
+    prices: dict[date, float] = {}
+    for item in (response or {}).get("prices") or []:
+        start = item.get("start") or item.get("timestamp")
+        if isinstance(start, str):
+            start = dt_util.parse_datetime(start)
+        if not isinstance(start, datetime) or item.get("price") is None:
+            continue
+        prices[dt_util.as_local(start).date()] = float(item["price"])
+    return prices
 
 
 def _daylight(latitude: float, longitude: float, tz):

@@ -103,5 +103,8 @@ is stored" in the README.
 
 - Missing market prices (price sensor down) are estimated from the same quarter on the
   nearest days (±7); the count is shown in a diagnostic sensor.
-- Gas prices for contracts are only used for the heat pump comparison.
+- Gas prices for contracts are only used for the heat pump comparison. Dynamic gas uses
+  the daily market price (excl. VAT) from the EnergyZero integration's `get_gas_prices`
+  service, stored per local date in the ledger table `gas_prices`; the gas day runs
+  06:00–06:00, so the hours before 06:00 use that date's price too.
 - 2027 grid tariffs and energy tax are assumptions until they are published.

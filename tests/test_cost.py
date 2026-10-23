@@ -173,6 +173,53 @@ def test_gas_comparison():
     assert hp[0].total == pytest.approx(10 * 0.30)
 
 
+def test_gas_comparison_dynamic():
+    from datetime import date
+
+    from custom_components.energy_cost_compare.gas import KWH_PER_M3, price_heat
+
+    contract = Contract.parse({
+        "id": "d", "name": "d", "supplier": "s", "kind": "dynamic", "checked_on": "2026-10-01",
+        "periods": [{"valid_from": "2026-01-01", "electricity": {"markup": 0.02},
+                     "gas": {"markup": 0.05, "fixed_per_month": 0.0}}],
+    }, "test")
+    taxes = Taxes(Periods.parse([{"valid_from": "2026-01-01", "vat": 0.0, "electricity_tax": 0.10,
+                                  "gas_tax": 0.60}], "t"))
+    tariffs = TariffSet({}, taxes, GridTariff("x", Periods.parse([{"valid_from": "2026-01-01"}], "g")), [])
+    day1 = int(datetime(2026, 10, 1, 12, tzinfo=UTC).timestamp())
+    day2 = int(datetime(2026, 10, 2, 12, tzinfo=UTC).timestamp())
+    intervals = [
+        Interval(start=day1, values={"heat": 40.0, "hp_elec": 10.0, "epex": 0.08}),
+        Interval(start=day2, values={"heat": 40.0, "hp_elec": 10.0, "epex": 0.12}),
+    ]
+    # Without gas market prices a dynamic contract has no gas comparison.
+    assert price_heat(intervals, contract, tariffs, UTC, 0.9) == ([], [])
+    # Day 2 has no price of its own and takes day 1's.
+    gas, hp = price_heat(intervals, contract, tariffs, UTC, 0.9, {date(2026, 10, 1): 0.30})
+    m3 = 40 / (0.9 * KWH_PER_M3)
+    assert [d.total for d in gas] == pytest.approx([m3 * 0.95, m3 * 0.95])
+    assert gas[0].parts["variable"] == pytest.approx(m3 * 0.95)
+    assert [d.total for d in hp] == pytest.approx([10 * 0.20, 10 * 0.24])
+    # Days before the first known gas price are left out.
+    gas, hp = price_heat(intervals, contract, tariffs, UTC, 0.9, {date(2026, 10, 2): 0.30})
+    assert [d.day for d in gas] == [date(2026, 10, 2)]
+
+
+def test_gas_prices_by_day():
+    from datetime import date
+
+    from custom_components.energy_cost_compare.coordinator import _gas_prices_by_day
+
+    response = {"prices": [
+        {"price": 0.72, "start": "2026-10-01 04:00:00+00:00", "end": "2026-10-02 04:00:00+00:00"},
+        {"price": 0.73, "timestamp": datetime(2026, 10, 2, 4, tzinfo=UTC)},
+        {"price": None, "start": "2026-10-03 04:00:00+00:00"},
+    ]}
+    prices = _gas_prices_by_day(response)
+    assert prices == {date(2026, 10, 1): 0.72, date(2026, 10, 2): 0.73}
+    assert _gas_prices_by_day(None) == {}
+
+
 def test_daytime_feed_in_bonus():
     contract = _contract("dynamic", markup=0.0, feed_in_markup=0.01, feed_in_bonus=0.1,
                          feed_in_bonus_min_price=-0.02)

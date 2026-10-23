@@ -34,7 +34,7 @@ through the Samba share or File editor app as `config`):
 | What | Where | Notes |
 | --- | --- | --- |
 | Integration code | `/config/custom_components/energy_cost_compare/` | Installed and updated by HACS. Don't edit: an update overwrites it. |
-| Quarter-hour ledger | `/config/energy_cost_compare/<entry_id>_ledger.db` | SQLite. Import, export, PV, battery, heat pump and market price per 15 minutes. The only place quarter-hour data is kept for longer than ~9 days. |
+| Quarter-hour ledger | `/config/energy_cost_compare/<entry_id>_ledger.db` | SQLite. Import, export, PV, battery, heat pump and market price per 15 minutes, and the daily gas market price. The only place quarter-hour data is kept for longer than ~9 days. |
 | Tariff files | `/config/energy_cost_compare/tariffs/` | `taxes.yaml`, `grid.yaml`, `contracts/*.yaml`, `scenarios/*.yaml`. Copied from the defaults on first start, then yours: updates never overwrite them. |
 | Price proposals | `/config/energy_cost_compare/tariffs/proposals/` | Waiting proposals; removed when accepted or rejected. |
 | Settings (counters, price sensor, start date) | `/config/.storage/core.config_entries` | Change them under Settings → Devices & services → Energy cost compare → Configure, never in the file. |
@@ -125,7 +125,12 @@ heffingskorting are spread per day. VAT is applied over the whole bill.
   selected scenario, with a rough annual estimate.
 - One sensor per contract: what your actual usage would have cost, with details.
 - Gas comparison (when heat counters are set): heating with a gas boiler against the
-  heat pump, on the baseline contract.
+  heat pump, under the current supplier (or the average of the fixed contracts when that
+  contract has no gas price). Dynamic contracts pay the daily gas market price plus their
+  markup; the price comes from Home Assistant's EnergyZero integration (no account
+  needed), so add that integration to compare them. Attributes split the gas costs into
+  `gas_variable_eur` and `gas_fixed_eur` (supplier and grid connection), with the
+  average `gas_price_m3` incl. tax and VAT.
 - Energy: house load, PV-only import/export, battery net AC energy and losses.
 
 ## Development

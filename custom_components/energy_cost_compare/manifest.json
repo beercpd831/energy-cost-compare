@@ -1,6 +1,9 @@
 {
   "domain": "energy_cost_compare",
   "name": "Energy cost compare",
+  "after_dependencies": [
+    "energyzero"
+  ],
   "codeowners": [
     "@beercpd831"
   ],
@@ -13,5 +16,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/beercpd831/energy-cost-compare/issues",
   "requirements": [],
-  "version": "0.1.7"
+  "version": "0.1.8"
 }

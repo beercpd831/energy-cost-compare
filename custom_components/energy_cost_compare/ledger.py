@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import date
 from pathlib import Path
 
 from .calc import Interval
@@ -18,6 +19,10 @@ CREATE TABLE IF NOT EXISTS intervals (
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS gas_prices (
+    day TEXT PRIMARY KEY,
+    price REAL NOT NULL
 );
 """
 
@@ -83,4 +88,16 @@ class Ledger:
 
     def set_meta(self, key: str, value: str) -> None:
         self.conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", (key, value))
+        self.conn.commit()
+
+    def gas_prices(self) -> dict[date, float]:
+        """Gas market price per day (EUR/m3 excl. VAT)."""
+        rows = self.conn.execute("SELECT day, price FROM gas_prices").fetchall()
+        return {date.fromisoformat(r[0]): r[1] for r in rows}
+
+    def upsert_gas_prices(self, prices: dict[date, float]) -> None:
+        self.conn.executemany(
+            "INSERT OR REPLACE INTO gas_prices (day, price) VALUES (?, ?)",
+            [(d.isoformat(), p) for d, p in prices.items()],
+        )
         self.conn.commit()

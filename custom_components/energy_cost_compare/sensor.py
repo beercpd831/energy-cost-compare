@@ -326,7 +326,11 @@ class ContractSensor(LedgerEntity, SensorEntity):
 
 
 class HeatSensor(LedgerEntity, SensorEntity):
-    """Gas boiler alternative, heat pump electricity, and the difference, under the baseline."""
+    """Gas boiler alternative, heat pump electricity, and the difference.
+
+    Priced under the current supplier, or under the average of the fixed contracts when
+    that contract has no gas price (a dynamic contract before gas market prices are known).
+    """
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = CURRENCY
@@ -339,12 +343,16 @@ class HeatSensor(LedgerEntity, SensorEntity):
         self.kind = kind
         self.period = period
 
-    def _days(self):
+    def _contract(self) -> str | None:
         summary = self.coordinator.summary
         if summary is None:
             return None
-        baseline = self.coordinator.baseline
-        return summary.heat.get(baseline) or summary.heat.get(BASELINE_AVERAGE)
+        actual = self.coordinator.actual
+        return actual if summary.heat.get(actual) else BASELINE_AVERAGE
+
+    def _days(self):
+        contract = self._contract()
+        return self.coordinator.summary.heat.get(contract) if contract else None
 
     @property
     def native_value(self) -> float | None:
@@ -372,12 +380,17 @@ class HeatSensor(LedgerEntity, SensorEntity):
         start = period_start(self.period)
         gas_days = [d for d in days[0] if start is None or d.day >= start]
         hp_days = [d for d in days[1] if start is None or d.day >= start]
+        m3 = sum(d.parts["m3"] for d in gas_days)
+        variable = sum(d.parts.get("variable", 0.0) for d in gas_days)
         return {
             "heat_kwh": round(sum(d.parts["heat_kwh"] for d in gas_days), 1),
-            "gas_m3": round(sum(d.parts["m3"] for d in gas_days), 1),
+            "gas_m3": round(m3, 1),
             "heat_pump_kwh": round(sum(d.parts["kwh"] for d in hp_days), 1),
+            "gas_price_m3": round(variable / m3, 4) if m3 else None,
+            "gas_variable_eur": round(variable, 2),
+            "gas_fixed_eur": round(sum(d.parts.get("fixed", 0.0) for d in gas_days), 2),
             "boiler_efficiency": self.coordinator.config.get(CONF_BOILER_EFFICIENCY, 0.9),
-            "contract": self.coordinator.baseline,
+            "contract": self._contract(),
         }
 
 
