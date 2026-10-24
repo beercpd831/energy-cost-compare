@@ -11,6 +11,8 @@ from pathlib import Path
 from astral import Observer
 from astral.sun import sun
 
+from homeassistant.components.recorder import get_instance
+from homeassistant.components.recorder.statistics import statistics_during_period
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
@@ -23,6 +25,7 @@ from .const import (
     BASELINE_AVERAGE,
     CONF_BOILER_EFFICIENCY,
     CONF_HEAT,
+    CONF_OUTDOOR_TEMP,
     CONF_PRICE_INCLUDES_VAT,
     CONF_PRICE_SENSOR,
     CONF_START_DATE,
@@ -83,6 +86,8 @@ class Summary:
     heat: dict[str, tuple[list[DayCost], list[DayCost]]] = field(default_factory=dict)
     # Energy per local day: day -> situation -> (import, export)
     energy_by_day: dict[date, dict[str, tuple[float, float]]] = field(default_factory=dict)
+    # Daily mean outdoor temperature (°C), when a sensor is configured.
+    outdoor_temp: dict[date, float] = field(default_factory=dict)
     missing_prices: int = 0
 
 
@@ -103,6 +108,7 @@ class LedgerCoordinator:
         self._lock = asyncio.Lock()
         self._unsub = None
         self._gas_prices_tried: datetime | None = None
+        self._outdoor_temps: dict[date, float] = {}
 
     @property
     def config(self) -> dict:
@@ -270,6 +276,11 @@ class LedgerCoordinator:
                     await self._fill_gas_prices()
                 except Exception:  # noqa: BLE001 - optional source; retried later
                     _LOGGER.warning("Reading gas market prices failed", exc_info=True)
+            if self.config.get(CONF_HEAT) and self.config.get(CONF_OUTDOOR_TEMP):
+                try:
+                    await self._fill_outdoor_temps()
+                except Exception:  # noqa: BLE001 - optional source; retried later
+                    _LOGGER.warning("Reading outdoor temperatures failed", exc_info=True)
             self._update_issues()
             self.summary = await self.hass.async_add_executor_job(self._summarise)
         async_dispatcher_send(self.hass, SIGNAL_LEDGER_UPDATED, self.entry.entry_id)
@@ -346,6 +357,24 @@ class LedgerCoordinator:
         if found:
             await self.hass.async_add_executor_job(self.ledger.upsert_gas_prices, found)
 
+    async def _fill_outdoor_temps(self) -> None:
+        """Daily mean outdoor temperature from the recorder's long-term statistics."""
+        entity_id = self.config[CONF_OUTDOOR_TEMP]
+        start = self.start
+        if self._outdoor_temps:
+            # Yesterday and today can still change.
+            last = max(self._outdoor_temps) - timedelta(days=1)
+            start = max(start, dt_util.start_of_local_day(last))
+        stats = await get_instance(self.hass).async_add_executor_job(
+            statistics_during_period,
+            self.hass, start, dt_util.utcnow(), {entity_id}, "day", None, {"mean"},
+        )
+        for row in stats.get(entity_id, []):
+            if row.get("mean") is None:
+                continue
+            day = dt_util.as_local(dt_util.utc_from_timestamp(row["start"])).date()
+            self._outdoor_temps[day] = float(row["mean"])
+
     def _summarise(self) -> Summary:
         tz = dt_util.get_default_time_zone()
         start_ts = int(self.start.timestamp())
@@ -356,6 +385,7 @@ class LedgerCoordinator:
             since_start=summarise(intervals),
             today=summarise([i for i in intervals if i.start >= today_ts]),
             last_interval_end=dt_util.utc_from_timestamp(last) if last else None,
+            outdoor_temp=dict(self._outdoor_temps),
         )
 
         for interval in intervals:

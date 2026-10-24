@@ -132,7 +132,15 @@ heffingskorting are spread per day. VAT is applied over the whole bill.
   markup; the price comes from Home Assistant's EnergyZero integration (no account
   needed), so add that integration to compare them. Attributes split the gas costs into
   `gas_variable_eur` and `gas_fixed_eur` (supplier and grid connection), with the
-  average `gas_price_m3` incl. tax and VAT.
+  average `gas_price_m3` incl. tax and VAT. The heat pump saving since the start also
+  carries `days`: per day the heat, heat pump kWh, COP, outdoor temperature and saving,
+  for a daily chart (not recorded).
+- Yearly heat pump estimate (when an outdoor temperature sensor is set): daily heat and
+  heat pump kWh are fitted against degree days (base 18 °C, daily mean temperature from
+  the recorder's statistics), scaled to a normal year (monthly normals De Bilt 1991–2020,
+  about 2,700 degree days) and priced at the average prices of the measured days. It
+  needs at least 7 finished days; with only autumn days the winter is an extrapolation,
+  so read `r2` and `days_used` with it.
 - Energy: house load, PV-only import/export, battery net AC energy and losses.
 
 ## Development

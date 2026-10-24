@@ -300,3 +300,35 @@ def test_settled_like_supplier_app():
     fixed = _contract("fixed", supply=0.25, feed_in=0.05, feed_in_cost=0.02)
     days = price_situation(_day(1, 10, 4), fixed, _tariffs(), "C", UTC)
     assert days[-1].settled["export_eur"] == pytest.approx(4 * (0.25 + 0.10 - 0.02))
+
+
+def test_heat_year_estimate():
+    from datetime import date, timedelta
+
+    from custom_components.energy_cost_compare.cost import DayCost
+    from custom_components.energy_cost_compare.gas import (
+        estimate_year,
+        normal_year_degree_days,
+    )
+
+    first = date(2026, 10, 1)
+    gas_days, hp_days, temps = [], [], {}
+    for n in range(10):
+        day = first + timedelta(days=n)
+        temps[day] = 8.0 + n  # 10 down to 1 degree days
+        heat = 5.0 + 2.0 * (18 - temps[day])  # hot water 5 kWh, 2 kWh per degree day
+        gas_days.append(DayCost(day, heat * 0.2 + 1.0, {
+            "m3": heat / 10, "heat_kwh": heat, "variable": heat * 0.2, "fixed": 1.0,
+        }))
+        hp_days.append(DayCost(day, heat / 4 * 0.3, {"kwh": heat / 4}))
+    # Too few days for an estimate.
+    assert estimate_year(gas_days[:5], hp_days[:5], temps, date(2026, 12, 1)) is None
+    est = estimate_year(gas_days, hp_days, temps, date(2026, 12, 1))
+    year_heat = 365 * 5.0 + 2.0 * normal_year_degree_days()
+    assert est["heat_kwh"] == pytest.approx(year_heat)
+    assert est["heat_pump_kwh"] == pytest.approx(year_heat / 4)
+    assert est["r2"] == pytest.approx(1.0)
+    assert est["gas_cost"] == pytest.approx(year_heat * 0.2 + 365)
+    assert est["saving"] == pytest.approx(year_heat * 0.2 + 365 - year_heat / 4 * 0.3)
+    # Today is not over and is left out.
+    assert estimate_year(gas_days, hp_days, temps, first + timedelta(days=9))["days_used"] == 9

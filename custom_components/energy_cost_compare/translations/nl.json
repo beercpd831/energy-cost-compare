@@ -15,6 +15,7 @@
           "heat": "Warmte van de warmtepomp",
           "hp_elec": "Stroom van de warmtepomp",
           "boiler_efficiency": "Rendement cv-ketel",
+          "outdoor_temperature": "Buitentemperatuur",
           "price_sensor": "Marktprijssensor",
           "price_includes_vat": "Prijssensor is inclusief btw",
           "start_date": "Startdatum"
@@ -30,6 +31,7 @@
           "heat": "Geleverde warmte voor verwarming en warm water (kWh-tellers), voor de gasvergelijking",
           "hp_elec": "Elektriciteitsverbruik van de warmtepomp",
           "boiler_efficiency": "Rendement van de gasketel waarmee je vergelijkt (0,90 = 90%, op bovenwaarde)",
+          "outdoor_temperature": "Optioneel, voor de dagoverzichten en de jaarschatting van de warmtepomp",
           "price_sensor": "Day-ahead (EPEX) prijs in EUR/kWh, bijvoorbeeld van ENTSO-e",
           "price_includes_vat": "Aan als de sensor de marktprijs plus 21% btw toont",
           "start_date": "Vergelijken vanaf deze datum"
@@ -68,6 +70,7 @@
           "heat": "Warmte van de warmtepomp",
           "hp_elec": "Stroom van de warmtepomp",
           "boiler_efficiency": "Rendement cv-ketel",
+          "outdoor_temperature": "Buitentemperatuur",
           "price_sensor": "Marktprijssensor",
           "price_includes_vat": "Prijssensor is inclusief btw",
           "start_date": "Startdatum"
@@ -83,6 +86,7 @@
           "heat": "Geleverde warmte voor verwarming en warm water (kWh-tellers), voor de gasvergelijking",
           "hp_elec": "Elektriciteitsverbruik van de warmtepomp",
           "boiler_efficiency": "Rendement van de gasketel waarmee je vergelijkt (0,90 = 90%, op bovenwaarde)",
+          "outdoor_temperature": "Optioneel, voor de dagoverzichten en de jaarschatting van de warmtepomp",
           "price_sensor": "Day-ahead (EPEX) prijs in EUR/kWh, bijvoorbeeld van ENTSO-e",
           "price_includes_vat": "Aan als de sensor de marktprijs plus 21% btw toont",
           "start_date": "Vergelijken vanaf deze datum"
@@ -271,6 +275,9 @@
       },
       "saving_heat_pump_total": {
         "name": "Besparing warmtepomp sinds start"
+      },
+      "saving_heat_pump_year_estimate": {
+        "name": "Besparing warmtepomp per jaar (schatting)"
       },
       "scenario_cost_baseline": {
         "name": "Scenario: kosten zonder PV en batterij (basis)"

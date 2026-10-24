@@ -19,13 +19,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .calc import Totals
-from .const import BASELINE_AVERAGE, CONF_BOILER_EFFICIENCY, CONF_HEAT
+from .const import BASELINE_AVERAGE, CONF_BOILER_EFFICIENCY, CONF_HEAT, CONF_OUTDOOR_TEMP
 from .coordinator import LedgerCoordinator, Summary
 from .cost import DayCost
 from .entity import LedgerEntity
+from .gas import estimate_year
 
 PERIODS = ("today", "month", "year", "total")
 CURRENCY = "EUR"
+# Days listed in the heat pump's "days" attribute, for a daily chart.
+HEAT_CHART_DAYS = 92
 
 
 def period_start(period: str) -> date | None:
@@ -336,6 +339,8 @@ class HeatSensor(LedgerEntity, SensorEntity):
     _attr_native_unit_of_measurement = CURRENCY
     _attr_state_class = SensorStateClass.TOTAL
     _attr_suggested_display_precision = 2
+    # The daily list is for charts; keep it out of the recorder database.
+    _unrecorded_attributes = frozenset({"days"})
 
     def __init__(self, coordinator: LedgerCoordinator, kind: str, period: str) -> None:
         super().__init__(coordinator, f"{kind}_{period}")
@@ -382,7 +387,7 @@ class HeatSensor(LedgerEntity, SensorEntity):
         hp_days = [d for d in days[1] if start is None or d.day >= start]
         m3 = sum(d.parts["m3"] for d in gas_days)
         variable = sum(d.parts.get("variable", 0.0) for d in gas_days)
-        return {
+        attrs = {
             "heat_kwh": round(sum(d.parts["heat_kwh"] for d in gas_days), 1),
             "gas_m3": round(m3, 1),
             "heat_pump_kwh": round(sum(d.parts["kwh"] for d in hp_days), 1),
@@ -392,6 +397,68 @@ class HeatSensor(LedgerEntity, SensorEntity):
             "boiler_efficiency": self.coordinator.config.get(CONF_BOILER_EFFICIENCY, 0.9),
             "contract": self._contract(),
         }
+        if self.kind == "saving_heat_pump" and self.period == "total":
+            attrs["days"] = heat_chart_days(days, self.coordinator.summary.outdoor_temp)
+        return attrs
+
+
+def heat_chart_days(days, temps: dict[date, float]) -> list[dict[str, object]]:
+    """Per day: heat, heat pump kWh, COP, outdoor temperature and the saving."""
+    hp_by_day = {d.day: d for d in days[1]}
+    rows = []
+    for g in days[0][-HEAT_CHART_DAYS:]:
+        hp = hp_by_day.get(g.day)
+        if hp is None:
+            continue
+        heat, kwh = g.parts["heat_kwh"], hp.parts["kwh"]
+        temp = temps.get(g.day)
+        rows.append({
+            "date": g.day.isoformat(),
+            "heat_kwh": round(heat, 1),
+            "heat_pump_kwh": round(kwh, 2),
+            "cop": round(heat / kwh, 2) if kwh > 0.1 else None,
+            "outdoor_temp": None if temp is None else round(temp, 1),
+            "saving": round(g.total - hp.total, 2),
+        })
+    return rows
+
+
+class HeatEstimateSensor(HeatSensor):
+    """Saving of the heat pump in a year of normal weather, from degree days."""
+
+    _attr_state_class = None
+    _unrecorded_attributes = frozenset()
+
+    def __init__(self, coordinator: LedgerCoordinator) -> None:
+        super().__init__(coordinator, "saving_heat_pump", "year_estimate")
+
+    def _estimate(self) -> dict[str, float] | None:
+        days = self._days()
+        if not days:
+            return None
+        return estimate_year(days[0], days[1], self.coordinator.summary.outdoor_temp, dt_util.now().date())
+
+    @property
+    def native_value(self) -> float | None:
+        estimate = self._estimate()
+        return None if estimate is None else round(estimate["saving"])
+
+    @property
+    def last_reset(self):
+        return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        estimate = self._estimate()
+        if estimate is None:
+            return None
+        attrs: dict[str, object] = {
+            k: round(v, 3 if k in ("r2", "kwh_per_degree_day") else 1)
+            for k, v in estimate.items() if k != "saving"
+        }
+        attrs["days_used"] = int(estimate["days_used"])
+        attrs["contract"] = self._contract()
+        return attrs
 
 
 async def async_setup_entry(
@@ -407,6 +474,8 @@ async def async_setup_entry(
             for kind in ("gas_boiler_cost", "heat_pump_cost", "saving_heat_pump")
             for period in PERIODS
         ]
+        if coordinator.config.get(CONF_OUTDOOR_TEMP):
+            entities.append(HeatEstimateSensor(coordinator))
     if coordinator.tariffs:
         entities += [ContractSensor(coordinator, cid) for cid in coordinator.contract_options]
     async_add_entities(entities)

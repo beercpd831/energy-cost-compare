@@ -22,6 +22,7 @@ from .const import (
     CONF_GRID_IMPORT,
     CONF_INV_IN,
     CONF_INV_OUT,
+    CONF_OUTDOOR_TEMP,
     CONF_PRICE_INCLUDES_VAT,
     CONF_PRICE_SENSOR,
     CONF_PV,
@@ -53,6 +54,8 @@ SUGGESTED: dict[str, list[str]] = {
 }
 # The ENTSO-e integration names its price sensor sensor.<prefix>_current_electricity_market_price.
 SUGGESTED_PRICE_SUFFIX = "current_electricity_market_price"
+# Words that mark an outdoor temperature sensor (ems-esp names it boiler_outdoortemp).
+SUGGESTED_OUTDOOR_WORDS = ("outdoortemp", "outdoor_temp", "outside_temp", "buitentemp")
 
 ENERGY_SELECTOR = selector.EntitySelector(
     selector.EntitySelectorConfig(domain="sensor", device_class="energy", multiple=True)
@@ -75,6 +78,19 @@ def _schema(hass, defaults: dict[str, Any]) -> vol.Schema:
         )
     fields[vol.Optional(CONF_PRICE_SENSOR, description={"suggested_value": price})] = (
         selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))
+    )
+    outdoor = defaults.get(CONF_OUTDOOR_TEMP)
+    if outdoor is None:
+        outdoor = next(
+            (
+                e for e in sorted(hass.states.async_entity_ids("sensor"))
+                if any(w in e for w in SUGGESTED_OUTDOOR_WORDS)
+                and hass.states.get(e).attributes.get("device_class") == "temperature"
+            ),
+            None,
+        )
+    fields[vol.Optional(CONF_OUTDOOR_TEMP, description={"suggested_value": outdoor})] = (
+        selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor", device_class="temperature"))
     )
     fields[vol.Required(CONF_PRICE_INCLUDES_VAT, default=defaults.get(CONF_PRICE_INCLUDES_VAT, True))] = (
         selector.BooleanSelector()

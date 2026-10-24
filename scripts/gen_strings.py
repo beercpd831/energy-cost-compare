@@ -16,6 +16,7 @@ L = {
    "heat": ("Heat from the heat pump", "Heat delivered for heating and hot water (kWh counters), for the gas comparison"),
    "hp_elec": ("Heat pump electricity", "Electricity used by the heat pump"),
    "boiler_efficiency": ("Gas boiler efficiency", "Efficiency of the gas boiler you compare with (0.90 = 90%, on upper heating value)"),
+   "outdoor_temperature": ("Outdoor temperature", "Optional, for the heat pump's daily chart and the yearly estimate"),
    "price_sensor": ("Market price sensor", "Day-ahead (EPEX) price in EUR/kWh, for example from ENTSO-e"),
    "price_includes_vat": ("Price sensor includes VAT", "On when the sensor shows the market price plus 21% VAT"),
    "start_date": ("Start date", "Compare from this date"),
@@ -41,6 +42,7 @@ L = {
   costs={"cost_baseline":"Cost without PV and battery (baseline)","cost_pv":"Cost with PV only","cost_pv_battery":"Cost with PV and battery",
    "saving_pv":"Saving PV","saving_pv_battery":"Saving PV and battery","saving_battery":"Saving battery"},
   heat={"gas_boiler_cost":"Heating cost with a gas boiler","heat_pump_cost":"Heating cost with the heat pump","saving_heat_pump":"Saving heat pump"},
+  heat_estimate="Saving heat pump per year (estimate)",
   periods={"today":"today","month":"this month","year":"this year","total":"since start"},
   contract="{name}: cost of actual usage",
   selects={"baseline":"Baseline contract","actual":"Actual supplier","scenario":"Future scenario"},
@@ -78,6 +80,7 @@ L = {
    "heat": ("Warmte van de warmtepomp", "Geleverde warmte voor verwarming en warm water (kWh-tellers), voor de gasvergelijking"),
    "hp_elec": ("Stroom van de warmtepomp", "Elektriciteitsverbruik van de warmtepomp"),
    "boiler_efficiency": ("Rendement cv-ketel", "Rendement van de gasketel waarmee je vergelijkt (0,90 = 90%, op bovenwaarde)"),
+   "outdoor_temperature": ("Buitentemperatuur", "Optioneel, voor de dagoverzichten en de jaarschatting van de warmtepomp"),
    "price_sensor": ("Marktprijssensor", "Day-ahead (EPEX) prijs in EUR/kWh, bijvoorbeeld van ENTSO-e"),
    "price_includes_vat": ("Prijssensor is inclusief btw", "Aan als de sensor de marktprijs plus 21% btw toont"),
    "start_date": ("Startdatum", "Vergelijken vanaf deze datum"),
@@ -103,6 +106,7 @@ L = {
   costs={"cost_baseline":"Kosten zonder PV en batterij (basis)","cost_pv":"Kosten met alleen PV","cost_pv_battery":"Kosten met PV en batterij",
    "saving_pv":"Besparing PV","saving_pv_battery":"Besparing PV en batterij","saving_battery":"Besparing batterij"},
   heat={"gas_boiler_cost":"Verwarmingskosten met cv-ketel","heat_pump_cost":"Verwarmingskosten met warmtepomp","saving_heat_pump":"Besparing warmtepomp"},
+  heat_estimate="Besparing warmtepomp per jaar (schatting)",
   periods={"today":"vandaag","month":"deze maand","year":"dit jaar","total":"sinds start"},
   contract="{name}: kosten van werkelijk verbruik",
   selects={"baseline":"Basiscontract","actual":"Huidige leverancier","scenario":"Toekomstscenario"},
@@ -146,6 +150,7 @@ def build(t):
     for k, n in t["heat"].items():
         for p, pn in t["periods"].items():
             sensors[f"{k}_{p}"] = {"name": f"{n} {pn}"}
+    sensors["saving_heat_pump_year_estimate"] = {"name": t["heat_estimate"]}
     for k, n in t["costs"].items():
         sensors[f"scenario_{k}"] = {"name": f"{t['scenario_prefix']} {n[0].lower() + n[1:]}"}
     return {

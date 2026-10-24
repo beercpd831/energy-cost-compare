@@ -16,6 +16,7 @@ CONF_HP_ELEC = "hp_elec"
 CONF_BOILER_EFFICIENCY = "boiler_efficiency"
 CONF_PRICE_SENSOR = "price_sensor"
 CONF_PRICE_INCLUDES_VAT = "price_includes_vat"
+CONF_OUTDOOR_TEMP = "outdoor_temperature"
 
 # Config keys that hold a list of energy counters summed into one quantity.
 QUANTITY_KEYS = (

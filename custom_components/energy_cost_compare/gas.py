@@ -84,3 +84,88 @@ def price_heat(
         }))
         hp_days.append(DayCost(day, hp_cost, {"kwh": elec[day]}))
     return gas_days, hp_days
+
+
+# Heating degree days use this base temperature (°C).
+DEGREE_DAY_BASE = 18.0
+# Normal monthly mean temperature at De Bilt, 1991-2020 (KNMI).
+NORMAL_MONTH_TEMP = (3.6, 4.0, 6.6, 9.8, 13.4, 16.2, 18.3, 17.9, 14.7, 10.9, 7.0, 4.2)
+MIN_ESTIMATE_DAYS = 7
+
+
+def degree_days(temp: float) -> float:
+    return max(0.0, DEGREE_DAY_BASE - temp)
+
+
+def normal_year_degree_days() -> float:
+    """Degree days in a normal year, from the monthly normals (2001: not a leap year)."""
+    return sum(
+        calendar.monthrange(2001, month)[1] * degree_days(temp)
+        for month, temp in enumerate(NORMAL_MONTH_TEMP, start=1)
+    )
+
+
+def _fit(xs: list[float], ys: list[float]) -> tuple[float, float, float] | None:
+    """Least squares y = a + b·x: (a, b, r²), or None without spread in x."""
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    if sxx < 1e-6:
+        return None
+    b = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    a = my - b * mx
+    syy = sum((y - my) ** 2 for y in ys)
+    ss_res = sum((y - a - b * x) ** 2 for x, y in zip(xs, ys))
+    return a, b, (1 - ss_res / syy) if syy else 1.0
+
+
+def estimate_year(
+    gas_days: list[DayCost], hp_days: list[DayCost], temps: dict[date, float], today: date
+) -> dict[str, float] | None:
+    """Heat, heat pump electricity and both costs in a year of normal weather.
+
+    Fits daily heat and heat pump kWh against degree days (the intercept is hot water
+    and losses), scales them to the degree days of a normal year, and prices them at
+    the average prices of the measured days. Today is left out, since it is not over.
+    """
+    hp_by_day = {d.day: d for d in hp_days}
+    rows = [
+        (degree_days(temps[g.day]), g, hp_by_day[g.day])
+        for g in gas_days
+        if g.day < today and g.day in temps and g.day in hp_by_day
+    ]
+    if len(rows) < MIN_ESTIMATE_DAYS:
+        return None
+    xs = [x for x, _, _ in rows]
+    heat_fit = _fit(xs, [g.parts["heat_kwh"] for _, g, _ in rows])
+    elec_fit = _fit(xs, [h.parts["kwh"] for _, _, h in rows])
+    if heat_fit is None or elec_fit is None:
+        return None
+    year_dd = normal_year_degree_days()
+    heat_kwh = max(0.0, 365 * heat_fit[0] + heat_fit[1] * year_dd)
+    hp_kwh = max(0.0, 365 * elec_fit[0] + elec_fit[1] * year_dd)
+
+    m3 = sum(g.parts["m3"] for _, g, _ in rows)
+    measured_heat = sum(g.parts["heat_kwh"] for _, g, _ in rows)
+    measured_kwh = sum(h.parts["kwh"] for _, _, h in rows)
+    if not m3 or not measured_heat or not measured_kwh:
+        return None
+    gas_m3 = heat_kwh * m3 / measured_heat
+    gas_variable = gas_m3 * sum(g.parts["variable"] for _, g, _ in rows) / m3
+    gas_fixed = 365 * sum(g.parts["fixed"] for _, g, _ in rows) / len(rows)
+    hp_cost = hp_kwh * sum(h.total for _, _, h in rows) / measured_kwh
+    return {
+        "heat_kwh": heat_kwh,
+        "heat_pump_kwh": hp_kwh,
+        "gas_m3": gas_m3,
+        "gas_variable_eur": gas_variable,
+        "gas_fixed_eur": gas_fixed,
+        "gas_cost": gas_variable + gas_fixed,
+        "heat_pump_cost": hp_cost,
+        "saving": gas_variable + gas_fixed - hp_cost,
+        "base_kwh_per_day": heat_fit[0],
+        "kwh_per_degree_day": heat_fit[1],
+        "r2": heat_fit[2],
+        "days_used": len(rows),
+        "degree_days_year": year_dd,
+    }

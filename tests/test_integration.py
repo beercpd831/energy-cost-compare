@@ -57,6 +57,21 @@ async def _import_hourly(hass: HomeAssistant, start, hours: int) -> None:
         price_meta,
         [StatisticData(start=start + timedelta(hours=h), mean=0.121, min=0.121, max=0.121) for h in range(hours)],
     )
+    temp_meta = StatisticMetaData(
+        has_mean=True,
+        has_sum=False,
+        name=None,
+        source="recorder",
+        statistic_id="sensor.outdoor",
+        unit_of_measurement="°C",
+        unit_class="temperature",
+        mean_type=1,
+    )
+    async_import_statistics(
+        hass,
+        temp_meta,
+        [StatisticData(start=start + timedelta(hours=h), mean=8.0 + h % 5, min=0.0, max=20.0) for h in range(hours)],
+    )
 
 
 async def test_ledger_from_hourly_statistics(
@@ -81,6 +96,7 @@ async def test_ledger_from_hourly_statistics(
             "hp_elec": ["sensor.hp"],
             "price_sensor": "sensor.price",
             "price_includes_vat": True,
+            "outdoor_temperature": "sensor.outdoor",
             "start_date": start_day.isoformat(),
         },
     )
@@ -134,3 +150,13 @@ async def test_ledger_from_hourly_statistics(
     assert heat is not None and heat.state not in ("unknown", "unavailable")
     assert heat.attributes["heat_kwh"] == pytest.approx(2.0 * hours, abs=0.1)
     assert heat.attributes["heat_pump_kwh"] == pytest.approx(0.5 * hours, abs=0.1)
+    # Daily mean outdoor temperature from the hourly statistics.
+    mean = sum(8.0 + h % 5 for h in range(hours)) / hours
+    assert coordinator.summary.outdoor_temp[start_day] == pytest.approx(mean)
+    first = heat.attributes["days"][0]
+    assert first["date"] == start_day.isoformat()
+    assert first["outdoor_temp"] == pytest.approx(mean, abs=0.05)
+    assert first["cop"] == pytest.approx(4.0, abs=0.01)
+    # One day with temperatures is too little for a yearly estimate.
+    estimate = hass.states.get("sensor.energy_cost_compare_saving_heat_pump_per_year_estimate")
+    assert estimate is not None and estimate.state == "unavailable"

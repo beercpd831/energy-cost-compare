@@ -24,7 +24,7 @@ is stored" in the README.
 | `ledger.py` | SQLite file `/config/energy_cost_compare/<entry_id>_ledger.db` with all quarters. Rebuildable from statistics, but only at hourly resolution beyond ~9 days. |
 | `tariffs.py` | Loads and validates `taxes.yaml`, `grid.yaml`, `contracts/*.yaml`, `scenarios/*.yaml`; price proposals (`validate_proposal`, `save_proposal`, `accept_proposal`). |
 | `cost.py` | Cost engine `price_situation()`: per quarter prices, calendar-year-to-date totals, the bill per day as the change of the year-to-date bill. |
-| `gas.py` | Heat pump against gas boiler. |
+| `gas.py` | Heat pump against gas boiler; yearly estimate via degree days (`estimate_year`). |
 | `coordinator.py` | Fills the ledger, prices every contract × situation (and the selected scenario), builds `Summary`, creates the repair issues for price proposals. |
 | `sensor.py`, `select.py` | Entities. Cost sensors per period (today, month, year, since start), saving sensors, one sensor per contract, scenario sensors, diagnostics. |
 | `repairs.py` | Accept/Reject flow for a price proposal. |
@@ -107,4 +107,7 @@ is stored" in the README.
   the daily market price (excl. VAT) from the EnergyZero integration's `get_gas_prices`
   service, stored per local date in the ledger table `gas_prices`; the gas day runs
   06:00–06:00, so the hours before 06:00 use that date's price too.
+- The yearly heat pump estimate is a linear fit on degree days with the days measured so
+  far. The outdoor temperatures are read from long-term statistics (kept forever) on
+  every refresh and only held in memory.
 - 2027 grid tariffs and energy tax are assumptions until they are published.
