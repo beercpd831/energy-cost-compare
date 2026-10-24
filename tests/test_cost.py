@@ -306,10 +306,7 @@ def test_heat_year_estimate():
     from datetime import date, timedelta
 
     from custom_components.energy_cost_compare.cost import DayCost
-    from custom_components.energy_cost_compare.gas import (
-        estimate_year,
-        normal_year_degree_days,
-    )
+    from custom_components.energy_cost_compare.gas import NORMAL_MONTH_TEMP, estimate_year
 
     first = date(2026, 10, 1)
     gas_days, hp_days, temps = [], [], {}
@@ -324,7 +321,9 @@ def test_heat_year_estimate():
     # Too few days for an estimate.
     assert estimate_year(gas_days[:5], hp_days[:5], temps, date(2026, 12, 1)) is None
     est = estimate_year(gas_days, hp_days, temps, date(2026, 12, 1))
-    year_heat = 365 * 5.0 + 2.0 * normal_year_degree_days()
+    # Per month 5 + 2 per degree day, but at least the lowest day (7 kWh at 17 °C).
+    month_days = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    year_heat = sum(n * max(7.0, 5.0 + 2.0 * max(0.0, 18 - t)) for n, t in zip(month_days, NORMAL_MONTH_TEMP))
     assert est["heat_kwh"] == pytest.approx(year_heat)
     assert est["heat_pump_kwh"] == pytest.approx(year_heat / 4)
     assert est["r2"] == pytest.approx(1.0)

@@ -119,14 +119,25 @@ def _fit(xs: list[float], ys: list[float]) -> tuple[float, float, float] | None:
     return a, b, (1 - ss_res / syy) if syy else 1.0
 
 
+def _year_total(fit: tuple[float, float, float], floor: float) -> float:
+    """A fitted daily value over the months of a normal year, never below `floor`."""
+    a, b, _ = fit
+    return sum(
+        calendar.monthrange(2001, month)[1] * max(floor, a + b * degree_days(temp))
+        for month, temp in enumerate(NORMAL_MONTH_TEMP, start=1)
+    )
+
+
 def estimate_year(
     gas_days: list[DayCost], hp_days: list[DayCost], temps: dict[date, float], today: date
 ) -> dict[str, float] | None:
     """Heat, heat pump electricity and both costs in a year of normal weather.
 
-    Fits daily heat and heat pump kWh against degree days (the intercept is hot water
-    and losses), scales them to the degree days of a normal year, and prices them at
-    the average prices of the measured days. Today is left out, since it is not over.
+    Fits daily heat and heat pump kWh against degree days and applies the fit to each
+    month's normal temperature. A month never gets less than the lowest measured day
+    (hot water goes on in summer), so a fit on autumn days, when the heating starts,
+    can't make summer negative. Prices are the averages of the measured days. Today is
+    left out, since it is not over.
     """
     hp_by_day = {d.day: d for d in hp_days}
     rows = [
@@ -137,13 +148,15 @@ def estimate_year(
     if len(rows) < MIN_ESTIMATE_DAYS:
         return None
     xs = [x for x, _, _ in rows]
-    heat_fit = _fit(xs, [g.parts["heat_kwh"] for _, g, _ in rows])
-    elec_fit = _fit(xs, [h.parts["kwh"] for _, _, h in rows])
+    heat = [g.parts["heat_kwh"] for _, g, _ in rows]
+    elec = [h.parts["kwh"] for _, _, h in rows]
+    heat_fit = _fit(xs, heat)
+    elec_fit = _fit(xs, elec)
     if heat_fit is None or elec_fit is None:
         return None
     year_dd = normal_year_degree_days()
-    heat_kwh = max(0.0, 365 * heat_fit[0] + heat_fit[1] * year_dd)
-    hp_kwh = max(0.0, 365 * elec_fit[0] + elec_fit[1] * year_dd)
+    heat_kwh = _year_total(heat_fit, max(0.0, min(heat)))
+    hp_kwh = _year_total(elec_fit, max(0.0, min(elec)))
 
     m3 = sum(g.parts["m3"] for _, g, _ in rows)
     measured_heat = sum(g.parts["heat_kwh"] for _, g, _ in rows)

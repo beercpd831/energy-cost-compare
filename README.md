@@ -138,7 +138,8 @@ heffingskorting are spread per day. VAT is applied over the whole bill.
 - Yearly heat pump estimate (when an outdoor temperature sensor is set): daily heat and
   heat pump kWh are fitted against degree days (base 18 °C, daily mean temperature from
   the recorder's statistics), scaled to a normal year (monthly normals De Bilt 1991–2020,
-  about 2,700 degree days) and priced at the average prices of the measured days. It
+  about 2,700 degree days; no month below the lowest measured day, for hot water in
+  summer) and priced at the average prices of the measured days. It
   needs at least 7 finished days; with only autumn days the winter is an extrapolation,
   so read `r2` and `days_used` with it.
 - Energy: house load, PV-only import/export, battery net AC energy and losses.
