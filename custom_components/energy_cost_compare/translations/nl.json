@@ -380,6 +380,14 @@
         "confidence": {
           "name": "Betrouwbaarheid",
           "description": "Bijvoorbeeld estimate of offer"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Nieuwe naam van het contract, als die veranderd is"
+        },
+        "supplier": {
+          "name": "Leverancier",
+          "description": "Nieuwe naam van de leverancier, als die veranderd is"
         }
       }
     }

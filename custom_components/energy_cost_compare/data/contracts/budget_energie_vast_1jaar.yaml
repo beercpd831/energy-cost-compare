@@ -1,7 +1,7 @@
 # All amounts in euro EXCLUDING VAT; electricity supply excludes energy tax.
 id: budget_energie_vast_1jaar
-name: Budget Energie 1 jaar vast
-supplier: Budget Energie
+name: Budget Thuis 1 jaar vast
+supplier: Budget Thuis
 kind: fixed
 checked_on: '2026-10-21'
 confidence: estimate

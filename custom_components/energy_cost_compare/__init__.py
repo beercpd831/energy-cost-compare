@@ -37,6 +37,8 @@ PROPOSE_SCHEMA = vol.Schema({
     vol.Optional("sources"): vol.All(cv.ensure_list, [cv.string]),
     vol.Optional("note"): cv.string,
     vol.Optional("confidence"): cv.string,
+    vol.Optional("name"): cv.string,
+    vol.Optional("supplier"): cv.string,
 })
 
 
@@ -111,6 +113,7 @@ async def _async_propose(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         "sources": call.data.get("sources") or [],
         "note": call.data.get("note") or "",
         "confidence": call.data.get("confidence") or "",
+        **{k: call.data[k] for k in ("name", "supplier") if call.data.get(k)},
     }
     key = await hass.async_add_executor_job(save_proposal, coordinator.tariff_folder, proposal)
     coordinator.proposals[key] = proposal

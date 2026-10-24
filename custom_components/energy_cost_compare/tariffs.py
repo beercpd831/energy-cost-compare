@@ -121,7 +121,7 @@ class ElectricityRates:
     # feed_in_bonus_min_price (Zonneplan: none below -2 cent incl. VAT)
     feed_in_bonus: float = 0.0
     feed_in_bonus_min_price: float = 0.0
-    # Feed-in costs per day, by the year's counted feed-in (Budget Energie until 2027):
+    # Feed-in costs per day, by the year's counted feed-in (Budget Thuis until 2027):
     # (from_kwh, per_day) sorted by from_kwh. Counted feed-in is the export up to the
     # import, so a surplus over the year doesn't count.
     feed_in_cost_tiers: list[tuple[float, float]] = field(default_factory=list)
@@ -338,6 +338,10 @@ LIST_FIELDS = ("feed_in_cost_tiers", "supply_slots")
 GAS_FIELDS = ("supply", "markup", "fixed_per_month")
 
 
+# A proposal can also rename a contract, for example when a supplier changes its name.
+DETAIL_FIELDS = ("name", "supplier")
+
+
 def proposal_key(contract_id: str, valid_from: date | str) -> str:
     return f"{contract_id}_{str(valid_from).replace('-', '')}"
 
@@ -361,7 +365,11 @@ def validate_proposal(contract: Contract, proposal: dict[str, Any]) -> None:
             if value is None or isinstance(value, bool):
                 raise TariffError(f"proposal {part}: {key} must be a number")
             _num(values, key, f"proposal {part}")
-    if not (proposal.get("electricity") or proposal.get("gas")):
+    for key in DETAIL_FIELDS:
+        if key in proposal and not str(proposal[key] or "").strip():
+            raise TariffError(f"proposal: {key} must not be empty")
+    if not (proposal.get("electricity") or proposal.get("gas")
+            or any(proposal.get(k) for k in DETAIL_FIELDS)):
         raise TariffError("proposal: no prices given")
     if contract.kind == FIXED and "markup" in (proposal.get("electricity") or {}):
         raise TariffError("proposal: a fixed contract has a supply price, not a markup")
@@ -408,6 +416,10 @@ def proposal_changes(contract: Contract, proposal: dict[str, Any]) -> list[tuple
     day = _date(proposal["valid_from"], "proposal")
     electricity, gas = current_values(contract, day)
     changes = []
+    for key in DETAIL_FIELDS:
+        new = proposal.get(key)
+        if new and str(new) != getattr(contract, key):
+            changes.append((key, getattr(contract, key), str(new)))
     for prefix, now, new in (("", electricity, proposal.get("electricity") or {}),
                              ("gas_", gas, proposal.get("gas") or {})):
         for key, value in new.items():
@@ -425,7 +437,8 @@ def accept_proposal(folder: Path, contract: Contract, proposal: dict[str, Any], 
     """
     valid_from = _date(proposal["valid_from"], "proposal")
     carried: list[str] = []
-    if proposal_changes(contract, proposal):
+    price_changes = [c for c in proposal_changes(contract, proposal) if c[0] not in DETAIL_FIELDS]
+    if price_changes:
         path = _contract_path(folder, contract.id)
         raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         old_e, old_g = current_values(contract, valid_from)
@@ -467,6 +480,9 @@ def accept_proposal(folder: Path, contract: Contract, proposal: dict[str, Any], 
 
 
 def _apply_sources(raw: dict[str, Any], proposal: dict[str, Any]) -> None:
+    for key in DETAIL_FIELDS:
+        if proposal.get(key):
+            raw[key] = str(proposal[key])
     if proposal.get("sources"):
         raw["sources"] = [str(s) for s in proposal["sources"]]
     if proposal.get("note"):

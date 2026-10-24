@@ -165,3 +165,20 @@ def test_supply_slots_proposal(folder: Path):
     accept_proposal(folder, contract, proposal, date(2026, 10, 21))
     rates = load_tariffs(folder).contracts[eneco].electricity(date(2026, 10, 15))
     assert rates.supply_slots == [("10:00", "17:00", 0.15), ("22:00", "05:00", 0.15)]
+
+
+def test_rename_proposal(folder: Path):
+    contract = load_tariffs(folder).contracts[VATTENFALL]
+    periods_before = load_tariffs(folder).contracts[VATTENFALL].periods.items
+    proposal = {"contract_id": VATTENFALL, "valid_from": "2026-10-24",
+                "name": "Vattenfall Thuis 1 jaar vast", "supplier": "Vattenfall Thuis"}
+    validate_proposal(contract, proposal)
+    with pytest.raises(TariffError):
+        validate_proposal(contract, {**proposal, "name": " "})
+    assert ("name", contract.name, "Vattenfall Thuis 1 jaar vast") in proposal_changes(contract, proposal)
+    accept_proposal(folder, contract, proposal, date(2026, 10, 24))
+    renamed = load_tariffs(folder).contracts[VATTENFALL]
+    assert (renamed.name, renamed.supplier) == ("Vattenfall Thuis 1 jaar vast", "Vattenfall Thuis")
+    # A rename alone adds no price period.
+    assert renamed.periods.items == periods_before
+    assert renamed.checked_on == date(2026, 10, 24)

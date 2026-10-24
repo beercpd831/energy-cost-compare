@@ -41,3 +41,13 @@ propose_prices:
       example: offer
       selector:
         text:
+    name:
+      required: false
+      example: Budget Thuis 1 jaar vast
+      selector:
+        text:
+    supplier:
+      required: false
+      example: Budget Thuis
+      selector:
+        text:

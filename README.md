@@ -73,7 +73,7 @@ On first start the integration copies its default tariff files to
   periods (`valid_from`). All amounts are in euro **excluding VAT**; electricity supply
   prices exclude energy tax. Dynamic contracts are priced as market price + markup.
   Feed-in costs can be per kWh (`feed_in_cost`) or per day by yearly feed-in
-  (`feed_in_cost_tiers`, a list of `from_kwh` / `per_day`), as Budget Energie charges until
+  (`feed_in_cost_tiers`, a list of `from_kwh` / `per_day`), as Budget Thuis (formerly Budget Energie) charges until
   2027. The tier follows the year's feed-in up to the import, extrapolated to a full year.
   A fixed contract with a time-of-use rate lists it in `supply_slots` (`from`, `to` as
   quoted `"HH:MM"` local time, and `supply`); `supply` applies outside the slots. Netting
@@ -95,6 +95,8 @@ a repair notice listing old → new values and the sources, with *Accept* and *R
 Accepting adds a price period from the proposal's start date (older days keep their
 prices); a later period, such as the 2027 terms, takes the new value only where it had
 the same value as before. A proposal without changes only records the check date.
+A proposal can also carry a new `name` and `supplier`, for when a supplier renames itself;
+the contract id (and so the entity ids) stays the same.
 
 The shipped prices are **estimates from comparison sites (21 October 2026)**. Each file
 lists its sources; check them against a personal offer.

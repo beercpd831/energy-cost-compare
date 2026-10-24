@@ -380,6 +380,14 @@
         "confidence": {
           "name": "Confidence",
           "description": "For example estimate or offer"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name of the contract, when it changed"
+        },
+        "supplier": {
+          "name": "Supplier",
+          "description": "New name of the supplier, when it changed"
         }
       }
     }
