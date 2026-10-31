@@ -177,6 +177,12 @@
       "cost_baseline_total": {
         "name": "Kosten zonder PV en batterij (basis) sinds start"
       },
+      "cost_baseline_day": {
+        "name": "Kosten zonder PV en batterij (basis) op terugkijkdatum"
+      },
+      "cost_baseline_day_month": {
+        "name": "Kosten zonder PV en batterij (basis) in maand van terugkijkdatum"
+      },
       "cost_pv_today": {
         "name": "Kosten met alleen PV vandaag"
       },
@@ -188,6 +194,12 @@
       },
       "cost_pv_total": {
         "name": "Kosten met alleen PV sinds start"
+      },
+      "cost_pv_day": {
+        "name": "Kosten met alleen PV op terugkijkdatum"
+      },
+      "cost_pv_day_month": {
+        "name": "Kosten met alleen PV in maand van terugkijkdatum"
       },
       "cost_pv_battery_today": {
         "name": "Kosten met PV en batterij vandaag"
@@ -201,6 +213,12 @@
       "cost_pv_battery_total": {
         "name": "Kosten met PV en batterij sinds start"
       },
+      "cost_pv_battery_day": {
+        "name": "Kosten met PV en batterij op terugkijkdatum"
+      },
+      "cost_pv_battery_day_month": {
+        "name": "Kosten met PV en batterij in maand van terugkijkdatum"
+      },
       "saving_pv_today": {
         "name": "Besparing PV vandaag"
       },
@@ -212,6 +230,12 @@
       },
       "saving_pv_total": {
         "name": "Besparing PV sinds start"
+      },
+      "saving_pv_day": {
+        "name": "Besparing PV op terugkijkdatum"
+      },
+      "saving_pv_day_month": {
+        "name": "Besparing PV in maand van terugkijkdatum"
       },
       "saving_pv_battery_today": {
         "name": "Besparing PV en batterij vandaag"
@@ -225,6 +249,12 @@
       "saving_pv_battery_total": {
         "name": "Besparing PV en batterij sinds start"
       },
+      "saving_pv_battery_day": {
+        "name": "Besparing PV en batterij op terugkijkdatum"
+      },
+      "saving_pv_battery_day_month": {
+        "name": "Besparing PV en batterij in maand van terugkijkdatum"
+      },
       "saving_battery_today": {
         "name": "Besparing batterij vandaag"
       },
@@ -236,6 +266,12 @@
       },
       "saving_battery_total": {
         "name": "Besparing batterij sinds start"
+      },
+      "saving_battery_day": {
+        "name": "Besparing batterij op terugkijkdatum"
+      },
+      "saving_battery_day_month": {
+        "name": "Besparing batterij in maand van terugkijkdatum"
       },
       "contract": {
         "name": "{name}: kosten van werkelijk verbruik"
@@ -307,6 +343,11 @@
       },
       "scenario": {
         "name": "Toekomstscenario"
+      }
+    },
+    "date": {
+      "lookback": {
+        "name": "Terugkijkdatum"
       }
     }
   },

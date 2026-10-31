@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import calendar
 from datetime import date
 
 from homeassistant.components.sensor import (
@@ -26,6 +27,8 @@ from .entity import LedgerEntity
 from .gas import estimate_year
 
 PERIODS = ("today", "month", "year", "total")
+# Periods around the look-back date: that day, and its whole month.
+LOOKBACK_PERIODS = ("day", "day_month")
 CURRENCY = "EUR"
 # Days listed in the heat pump's "days" attribute, for a daily chart.
 HEAT_CHART_DAYS = 92
@@ -42,19 +45,32 @@ def period_start(period: str) -> date | None:
     return None
 
 
-def period_sum(days: list[DayCost] | None, period: str) -> float | None:
+def period_range(period: str, lookback: date | None = None) -> tuple[date | None, date | None]:
+    """First and last day of a period (None: open), for look-back periods around `lookback`."""
+    if period == "day" and lookback:
+        return lookback, lookback
+    if period == "day_month" and lookback:
+        last = calendar.monthrange(lookback.year, lookback.month)[1]
+        return lookback.replace(day=1), lookback.replace(day=last)
+    return period_start(period), None
+
+
+def in_period(day: date, period: str, lookback: date | None = None) -> bool:
+    first, last = period_range(period, lookback)
+    return (first is None or day >= first) and (last is None or day <= last)
+
+
+def period_sum(days: list[DayCost] | None, period: str, lookback: date | None = None) -> float | None:
     if days is None:
         return None
-    start = period_start(period)
-    return sum(d.total for d in days if start is None or d.day >= start)
+    return sum(d.total for d in days if in_period(d.day, period, lookback))
 
 
-def period_settled(days: list[DayCost] | None, period: str) -> dict[str, float]:
+def period_settled(days: list[DayCost] | None, period: str, lookback: date | None = None) -> dict[str, float]:
     """Import and export as a supplier app shows them: kWh, euro and average price."""
-    start = period_start(period)
     totals: dict[str, float] = {}
     for d in days or []:
-        if start is None or d.day >= start:
+        if in_period(d.day, period, lookback):
             for key, value in d.settled.items():
                 totals[key] = totals.get(key, 0.0) + value
     if not totals:
@@ -69,22 +85,22 @@ def period_settled(days: list[DayCost] | None, period: str) -> dict[str, float]:
     }
 
 
-def period_parts(days: list[DayCost] | None, period: str) -> dict[str, float]:
+def period_parts(days: list[DayCost] | None, period: str, lookback: date | None = None) -> dict[str, float]:
     """The period's bill per component (supply, feed_in, ..., vat), euro incl. VAT."""
-    start = period_start(period)
     parts: dict[str, float] = {}
     for d in days or []:
-        if start is None or d.day >= start:
+        if in_period(d.day, period, lookback):
             for key, value in d.parts.items():
                 parts[key] = parts.get(key, 0.0) + value
     return {k: round(v, 2) for k, v in parts.items()}
 
 
-def period_energy(summary: Summary, situation: str, period: str) -> tuple[float, float]:
-    start = period_start(period)
+def period_energy(
+    summary: Summary, situation: str, period: str, lookback: date | None = None
+) -> tuple[float, float]:
     imp = exp = 0.0
     for day, per_situation in summary.energy_by_day.items():
-        if start is None or day >= start:
+        if in_period(day, period, lookback):
             imp += per_situation[situation][0]
             exp += per_situation[situation][1]
     return imp, exp
@@ -209,13 +225,20 @@ class CostSensor(LedgerEntity, SensorEntity):
         self.kind = kind
         self.period = period
         self.scenario = scenario
+        if period in LOOKBACK_PERIODS:
+            # Jumps whenever another day is picked, so no long-term statistics.
+            self._attr_state_class = None
+
+    @property
+    def _lookback(self) -> date | None:
+        return self.coordinator.lookback_date if self.period in LOOKBACK_PERIODS else None
 
     def _contract(self, role: str) -> str:
         return self.coordinator.baseline if role == "baseline" else self.coordinator.actual
 
     def _cost(self, role: str, situation: str) -> float | None:
         days = self.coordinator.costs_for(self._contract(role), situation, self.scenario)
-        return period_sum(days, self.period)
+        return period_sum(days, self.period, self._lookback)
 
     @property
     def native_value(self) -> float | None:
@@ -232,6 +255,8 @@ class CostSensor(LedgerEntity, SensorEntity):
 
     @property
     def last_reset(self):
+        if self.period in LOOKBACK_PERIODS:
+            return None
         start = period_start(self.period)
         return dt_util.start_of_local_day(start) if start else None
 
@@ -241,7 +266,11 @@ class CostSensor(LedgerEntity, SensorEntity):
         if summary is None:
             return None
         first, second = COST_KINDS[self.kind]
+        lookback = self._lookback
         attrs: dict[str, object] = {"contract": self._contract(first[0]), "situation": first[1]}
+        if lookback:
+            first_day, last_day = period_range(self.period, lookback)
+            attrs.update(first_day=first_day.isoformat(), last_day=last_day.isoformat())
         if self.scenario:
             scenario = self.coordinator.selected_scenario
             attrs["scenario"] = scenario.name if scenario else None
@@ -251,14 +280,14 @@ class CostSensor(LedgerEntity, SensorEntity):
             days = len(summary.energy_by_day)
             attrs["days_recorded"] = days
             attrs["annual_estimate"] = round(self.native_value * 365 / days)
-        imp, exp = period_energy(summary, first[1], self.period)
+        imp, exp = period_energy(summary, first[1], self.period, lookback)
         attrs.update(grid_import_kwh=round(imp, 2), grid_export_kwh=round(exp, 2))
         if second is None:
             days = self.coordinator.costs_for(self._contract(first[0]), first[1], self.scenario)
-            attrs.update(period_settled(days, self.period))
-            attrs["bill"] = period_parts(days, self.period)
+            attrs.update(period_settled(days, self.period, lookback))
+            attrs["bill"] = period_parts(days, self.period, lookback)
         if second is not None:
-            imp2, exp2 = period_energy(summary, second[1], self.period)
+            imp2, exp2 = period_energy(summary, second[1], self.period, lookback)
             attrs.update(
                 compared_contract=self._contract(second[0]),
                 compared_situation=second[1],
@@ -268,8 +297,8 @@ class CostSensor(LedgerEntity, SensorEntity):
             # The same comparison with both sides on the actual supplier, so the effect
             # of the installation can be seen without the effect of the contract.
             actual = self.coordinator.actual
-            same_a = period_sum(self.coordinator.costs_for(actual, first[1], self.scenario), self.period)
-            same_b = period_sum(self.coordinator.costs_for(actual, second[1], self.scenario), self.period)
+            same_a = period_sum(self.coordinator.costs_for(actual, first[1], self.scenario), self.period, lookback)
+            same_b = period_sum(self.coordinator.costs_for(actual, second[1], self.scenario), self.period, lookback)
             if same_a is not None and same_b is not None:
                 attrs["saving_same_contract"] = round(same_a - same_b, 2)
         return attrs
@@ -466,7 +495,9 @@ async def async_setup_entry(
 ) -> None:
     coordinator: LedgerCoordinator = entry.runtime_data
     entities: list[SensorEntity] = [LedgerSensor(coordinator, d) for d in ENERGY_DESCRIPTIONS]
-    entities += [CostSensor(coordinator, kind, period) for kind in COST_KINDS for period in PERIODS]
+    entities += [
+        CostSensor(coordinator, kind, period) for kind in COST_KINDS for period in PERIODS + LOOKBACK_PERIODS
+    ]
     entities += [CostSensor(coordinator, kind, "total", scenario=True) for kind in COST_KINDS]
     if coordinator.config.get(CONF_HEAT):
         entities += [

@@ -26,7 +26,7 @@ is stored" in the README.
 | `cost.py` | Cost engine `price_situation()`: per quarter prices, calendar-year-to-date totals, the bill per day as the change of the year-to-date bill. |
 | `gas.py` | Heat pump against gas boiler; yearly estimate via degree days (`estimate_year`). |
 | `coordinator.py` | Fills the ledger, prices every contract × situation (and the selected scenario), builds `Summary`, creates the repair issues for price proposals. |
-| `sensor.py`, `select.py` | Entities. Cost sensors per period (today, month, year, since start), saving sensors, one sensor per contract, scenario sensors, diagnostics. |
+| `sensor.py`, `select.py`, `date.py` | Entities. Cost sensors per period (today, month, year, since start, and the day and month of the look-back date), saving sensors, one sensor per contract, scenario sensors, diagnostics. |
 | `repairs.py` | Accept/Reject flow for a price proposal. |
 | `__init__.py` | Setup and the services `recalculate` and `propose_prices`. |
 | `config_flow.py` | Setup (counters, price sensor, start date) and options (contract prices). |

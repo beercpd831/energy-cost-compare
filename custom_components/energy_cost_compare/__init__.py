@@ -26,7 +26,7 @@ from .coordinator import LedgerCoordinator
 from .ledger import Ledger
 from .tariffs import LIST_FIELDS, TariffError, proposal_changes, save_proposal, validate_proposal
 
-PLATFORMS = [Platform.SELECT, Platform.SENSOR]
+PLATFORMS = [Platform.DATE, Platform.SELECT, Platform.SENSOR]
 
 RECALCULATE_SCHEMA = vol.Schema({vol.Optional("from_date"): cv.date})
 PROPOSE_SCHEMA = vol.Schema({

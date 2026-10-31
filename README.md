@@ -123,6 +123,10 @@ heffingskorting are spread per day. VAT is applied over the whole bill.
   while salderen applies, without fixed costs and without the yearly netting balance.
   `bill` holds the period's bill per component (`supply`, `feed_in`, `feed_in_cost`,
   `energy_tax`, `fixed`, `grid`, `tax_reduction`, each incl. VAT, and `vat`).
+- Look back: the date entity "Look-back date" picks a day (it follows today until another
+  day is picked; picking today follows today again). The cost and saving sensors "on the
+  look-back date" and "in the month of the look-back date" show that day and its whole
+  month, with the same attributes as the other cost sensors plus `first_day`/`last_day`.
 - Scenario sensors: the same costs and savings since the start, replayed under the
   selected scenario, with a rough annual estimate.
 - One sensor per contract: what your actual usage would have cost, with details.

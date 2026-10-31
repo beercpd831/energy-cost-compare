@@ -160,3 +160,31 @@ async def test_ledger_from_hourly_statistics(
     # One day with temperatures is too little for a yearly estimate.
     estimate = hass.states.get("sensor.energy_cost_compare_saving_heat_pump_per_year_estimate")
     assert estimate is not None and estimate.state == "unavailable"
+
+    # Look back: pick the first day; the day sensor shows that day, the month sensor its month.
+    lookback = hass.states.get("date.energy_cost_compare_look_back_date")
+    assert lookback is not None and lookback.state == dt_util.now().date().isoformat()
+    await hass.services.async_call(
+        "date", "set_value",
+        {"entity_id": "date.energy_cost_compare_look_back_date", "date": start_day.isoformat()},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert coordinator.lookback == start_day
+    day = hass.states.get("sensor.energy_cost_compare_cost_with_pv_and_battery_on_the_look_back_date")
+    assert day.attributes["first_day"] == start_day.isoformat()
+    first = coordinator.costs_for("zonneplan_dynamisch", "C")[0]
+    assert first.day == start_day
+    assert float(day.state) == pytest.approx(first.total, abs=0.01)
+    assert day.attributes["grid_import_kwh"] == pytest.approx(
+        coordinator.summary.energy_by_day[start_day]["C"][0], abs=0.01
+    )
+    month = hass.states.get("sensor.energy_cost_compare_cost_with_pv_and_battery_in_the_month_of_the_look_back_date")
+    assert month.attributes["first_day"] == start_day.replace(day=1).isoformat()
+    # Picking today follows today again.
+    await hass.services.async_call(
+        "date", "set_value",
+        {"entity_id": "date.energy_cost_compare_look_back_date", "date": dt_util.now().date().isoformat()},
+        blocking=True,
+    )
+    assert coordinator.lookback is None

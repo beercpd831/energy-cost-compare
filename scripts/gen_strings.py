@@ -44,6 +44,8 @@ L = {
   heat={"gas_boiler_cost":"Heating cost with a gas boiler","heat_pump_cost":"Heating cost with the heat pump","saving_heat_pump":"Saving heat pump"},
   heat_estimate="Saving heat pump per year (estimate)",
   periods={"today":"today","month":"this month","year":"this year","total":"since start"},
+  lookback_periods={"day":"on the look-back date","day_month":"in the month of the look-back date"},
+  lookback="Look-back date",
   contract="{name}: cost of actual usage",
   selects={"baseline":"Baseline contract","actual":"Actual supplier","scenario":"Future scenario"},
   scenario_prefix="Scenario:",
@@ -108,6 +110,8 @@ L = {
   heat={"gas_boiler_cost":"Verwarmingskosten met cv-ketel","heat_pump_cost":"Verwarmingskosten met warmtepomp","saving_heat_pump":"Besparing warmtepomp"},
   heat_estimate="Besparing warmtepomp per jaar (schatting)",
   periods={"today":"vandaag","month":"deze maand","year":"dit jaar","total":"sinds start"},
+  lookback_periods={"day":"op terugkijkdatum","day_month":"in maand van terugkijkdatum"},
+  lookback="Terugkijkdatum",
   contract="{name}: kosten van werkelijk verbruik",
   selects={"baseline":"Basiscontract","actual":"Huidige leverancier","scenario":"Toekomstscenario"},
   scenario_prefix="Scenario:",
@@ -144,7 +148,7 @@ def build(t):
     for k, n in t["diag"].items():
         sensors[k] = {"name": n}
     for k, n in t["costs"].items():
-        for p, pn in t["periods"].items():
+        for p, pn in {**t["periods"], **t["lookback_periods"]}.items():
             sensors[f"{k}_{p}"] = {"name": f"{n} {pn}"}
     sensors["contract"] = {"name": t["contract"]}
     for k, n in t["heat"].items():
@@ -162,7 +166,8 @@ def build(t):
         "contract": {"title": t["contract_title"], "data": {"contract": t["contract_field"]}},
         "prices": {"title": t["prices_title"], "description": t["prices_desc"], "data": t["price_fields"]}},
         "error": t["errors"]},
-     "entity": {"sensor": sensors, "select": {k: {"name": v} for k, v in t["selects"].items()}},
+     "entity": {"sensor": sensors, "select": {k: {"name": v} for k, v in t["selects"].items()},
+                "date": {"lookback": {"name": t["lookback"]}}},
      "issues": {**{k: {"title": v[0], "description": v[1]} for k, v in t["issues"].items()},
                 "price_proposal": {"title": t["proposal"]["title"], "description": t["proposal"]["description"],
                   "fix_flow": {"step": {"init": {"title": t["proposal"]["step_title"], "description": t["proposal"]["step_desc"],

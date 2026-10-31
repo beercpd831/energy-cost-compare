@@ -177,6 +177,12 @@
       "cost_baseline_total": {
         "name": "Cost without PV and battery (baseline) since start"
       },
+      "cost_baseline_day": {
+        "name": "Cost without PV and battery (baseline) on the look-back date"
+      },
+      "cost_baseline_day_month": {
+        "name": "Cost without PV and battery (baseline) in the month of the look-back date"
+      },
       "cost_pv_today": {
         "name": "Cost with PV only today"
       },
@@ -188,6 +194,12 @@
       },
       "cost_pv_total": {
         "name": "Cost with PV only since start"
+      },
+      "cost_pv_day": {
+        "name": "Cost with PV only on the look-back date"
+      },
+      "cost_pv_day_month": {
+        "name": "Cost with PV only in the month of the look-back date"
       },
       "cost_pv_battery_today": {
         "name": "Cost with PV and battery today"
@@ -201,6 +213,12 @@
       "cost_pv_battery_total": {
         "name": "Cost with PV and battery since start"
       },
+      "cost_pv_battery_day": {
+        "name": "Cost with PV and battery on the look-back date"
+      },
+      "cost_pv_battery_day_month": {
+        "name": "Cost with PV and battery in the month of the look-back date"
+      },
       "saving_pv_today": {
         "name": "Saving PV today"
       },
@@ -212,6 +230,12 @@
       },
       "saving_pv_total": {
         "name": "Saving PV since start"
+      },
+      "saving_pv_day": {
+        "name": "Saving PV on the look-back date"
+      },
+      "saving_pv_day_month": {
+        "name": "Saving PV in the month of the look-back date"
       },
       "saving_pv_battery_today": {
         "name": "Saving PV and battery today"
@@ -225,6 +249,12 @@
       "saving_pv_battery_total": {
         "name": "Saving PV and battery since start"
       },
+      "saving_pv_battery_day": {
+        "name": "Saving PV and battery on the look-back date"
+      },
+      "saving_pv_battery_day_month": {
+        "name": "Saving PV and battery in the month of the look-back date"
+      },
       "saving_battery_today": {
         "name": "Saving battery today"
       },
@@ -236,6 +266,12 @@
       },
       "saving_battery_total": {
         "name": "Saving battery since start"
+      },
+      "saving_battery_day": {
+        "name": "Saving battery on the look-back date"
+      },
+      "saving_battery_day_month": {
+        "name": "Saving battery in the month of the look-back date"
       },
       "contract": {
         "name": "{name}: cost of actual usage"
@@ -307,6 +343,11 @@
       },
       "scenario": {
         "name": "Future scenario"
+      }
+    },
+    "date": {
+      "lookback": {
+        "name": "Look-back date"
       }
     }
   },

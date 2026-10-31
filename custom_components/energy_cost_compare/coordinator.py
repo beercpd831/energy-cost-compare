@@ -105,6 +105,8 @@ class LedgerCoordinator:
         self.baseline: str = BASELINE_AVERAGE
         self.actual: str = DEFAULT_ACTUAL
         self.scenario: str = DEFAULT_SCENARIO
+        # Day picked to look back at; None follows today.
+        self.lookback: date | None = None
         self._lock = asyncio.Lock()
         self._unsub = None
         self._gas_prices_tried: datetime | None = None
@@ -155,6 +157,8 @@ class LedgerCoordinator:
         self.baseline = self.ledger.get_meta("baseline") or BASELINE_AVERAGE
         self.actual = self.ledger.get_meta("actual") or DEFAULT_ACTUAL
         self.scenario = self.ledger.get_meta("scenario") or DEFAULT_SCENARIO
+        lookback = self.ledger.get_meta("lookback")
+        self.lookback = date.fromisoformat(lookback) if lookback else None
 
     async def async_select(self, key: str, value: str) -> None:
         setattr(self, key, value)
@@ -162,6 +166,17 @@ class LedgerCoordinator:
         if key == "scenario":
             async with self._lock:
                 self.summary = await self.hass.async_add_executor_job(self._summarise)
+        async_dispatcher_send(self.hass, SIGNAL_LEDGER_UPDATED, self.entry.entry_id)
+
+    @property
+    def lookback_date(self) -> date:
+        return self.lookback or dt_util.now().date()
+
+    async def async_set_lookback(self, value: date) -> None:
+        """Pick a day to look back at; picking today follows today again."""
+        self.lookback = None if value == dt_util.now().date() else value
+        stored = self.lookback.isoformat() if self.lookback else ""
+        await self.hass.async_add_executor_job(self.ledger.set_meta, "lookback", stored)
         async_dispatcher_send(self.hass, SIGNAL_LEDGER_UPDATED, self.entry.entry_id)
 
     @property
