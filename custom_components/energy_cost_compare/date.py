@@ -8,6 +8,7 @@ from homeassistant.components.date import DateEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .coordinator import LedgerCoordinator
 from .entity import LedgerEntity
@@ -26,6 +27,9 @@ class LookbackDate(LedgerEntity, DateEntity):
         return self.coordinator.lookback_date
 
     async def async_set_value(self, value: date) -> None:
+        # Show the day at once; storing it and updating the sensors follow.
+        self.coordinator.lookback = None if value == dt_util.now().date() else value
+        self.async_write_ha_state()
         await self.coordinator.async_set_lookback(value)
 
 

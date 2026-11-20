@@ -140,6 +140,26 @@ async def test_ledger_from_hourly_statistics(
     assert saving is not None and saving.state not in ("unknown", "unavailable")
     assert hass.states.get("select.energy_cost_compare_baseline_contract").state == "average_fixed"
     assert hass.states.get("select.energy_cost_compare_future_scenario").state == "2027_no_netting"
+    # A new scenario shows in the select before the contracts are repriced.
+    seen = []
+    summarise = coordinator._summarise
+    def spy():
+        seen.append(hass.states.get("select.energy_cost_compare_future_scenario").state)
+        return summarise()
+    coordinator._summarise = spy
+    await hass.services.async_call(
+        "select", "select_option",
+        {"entity_id": "select.energy_cost_compare_future_scenario", "option": "now"},
+        blocking=True,
+    )
+    coordinator._summarise = summarise
+    assert seen == ["now"]
+    await hass.services.async_call(
+        "select", "select_option",
+        {"entity_id": "select.energy_cost_compare_future_scenario", "option": "2027_no_netting"},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
     future = hass.states.get("sensor.energy_cost_compare_scenario_saving_pv_and_battery")
     assert future is not None and future.attributes["scenario"] == "2027 zonder salderen"
     assert "annual_estimate" in future.attributes

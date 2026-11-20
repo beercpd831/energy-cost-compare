@@ -36,6 +36,10 @@ class ContractSelect(LedgerEntity, SelectEntity):
         return value if value in self.options else None
 
     async def async_select_option(self, option: str) -> None:
+        # Show the choice at once; storing it and recalculating (a scenario
+        # reprices every contract) follow and can take seconds.
+        setattr(self.coordinator, self.key, option)
+        self.async_write_ha_state()
         await self.coordinator.async_select(self.key, option)
 
 
